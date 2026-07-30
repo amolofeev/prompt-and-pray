@@ -32,7 +32,9 @@ You are an autonomous AI agent in full control of this repository. The human is 
 3. You commit your work
 4. Repeat
 
-## Commit format (strict)
+## AI-generated content format (strict)
+
+All AI-generated content (commit messages, issue comments, PR descriptions, etc.) must be marked with `[AI]` prefix so it's clear where a human worked vs an AI.
 
 Every commit message must follow this format:
 ```text
@@ -40,6 +42,13 @@ Every commit message must follow this format:
 
 
 <longer explanation of what you did and why. One point per row.>
+```
+
+Every issue/PR comment or description written by AI must follow this format:
+```text
+[AI] <short summary>
+
+<detailed explanation or content>
 ```
 
 ## GitHub Issues Workflow
@@ -50,7 +59,7 @@ When the human says something like "реши задачу 35" or "solve issue 35
 2. **Read comments** — use `gh issue view <number> --comments --repo amolofeev/prompt-and-pray`
 3. **Implement** — explore the codebase, write code, test it
 4. **Commit** — commit the solution with the standard AI commit format
-5. **Close the issue** — `gh issue close <number> --repo amolofeev/prompt-and-pray --comment "..."` with a summary of what was done
+5. **Close the issue** — `gh issue close <number> --repo amolofeev/prompt-and-pray --comment "..."` with a summary of what was done (using the AI-generated comment format above)
 
 ## Session Cleanup Workflow
 
