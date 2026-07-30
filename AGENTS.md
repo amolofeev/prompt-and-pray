@@ -51,3 +51,12 @@ When the human says something like "реши задачу 35" or "solve issue 35
 3. **Implement** — explore the codebase, write code, test it
 4. **Commit** — commit the solution with the standard AI commit format
 5. **Close the issue** — `gh issue close <number> --repo amolofeev/prompt-and-pray --comment "..."` with a summary of what was done
+
+## Session Cleanup Workflow
+
+When the user says something like "очисти старые сессии" or "delete old sessions":
+
+1. **List sessions** — run `opencode session list --format json` to get all sessions
+2. **Identify old sessions** — keep only the N most recent sessions (default: keep the last 5, or keep the current session + 4 most recent). The current session can be identified by comparing with the `OPENCODE_SESSION_ID` environment variable.
+3. **Delete** — for each old session, run `opencode session delete <sessionID>`
+4. **Report** — tell the user how many sessions were deleted and how many remain
