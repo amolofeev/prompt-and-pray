@@ -39,7 +39,7 @@
 ## 6. Commit
 
 ```text
-[AI] <short summary of the human's task> #<id>
+[AI] #<id> <short summary of the human's task>
 
 
 <longer explanation of what was done and why. One point per row.>

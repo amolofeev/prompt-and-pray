@@ -66,9 +66,9 @@ Every commit message must follow this format:
 <longer explanation of what you did and why. One point per row.>
 ```
 
-If the commit is related to a task/issue, the reference to that task in the form `#<id>` (e.g. `#6`) MUST be placed in the subject line right after the `[AI]` block:
+If the commit is related to a task/issue, the reference to that task in the form `#<id>` (e.g. `#6`) MUST be placed in the subject line immediately after the `[AI]` block, before the summary:
 ```text
-[AI] <short summary of the human's task> #6
+[AI] #6 <short summary of the human's task>
 
 
 <longer explanation of what you did and why. One point per row.>
@@ -131,8 +131,8 @@ When a task needs to be decomposed into subtasks (e.g. "декомпозируй
    как отложенное (например, «интеграция — Атом 8.3»).
 5. stdout — только данные, stderr — только служебное; токен нигде не выводится
    и не логируется; `--json` валиден (проверка `jq`).
-6. Коммит в формате [AI] со ссылкой на задачу `#N` сразу после блока `[AI]`,
-   изменения запушены в origin.
+6. Коммит в формате `[AI] #N <описание>` (ссылка на задачу `#N` сразу после блока
+   `[AI]`, до текста), изменения запушены в origin.
 7. Задача закрыта с [AI]-комментарием и подтверждением DoD-чеклиста.
 
 ## Session Cleanup Workflow
