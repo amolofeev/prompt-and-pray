@@ -60,19 +60,16 @@ All AI-generated content (commit messages, issue comments, PR descriptions, etc.
 
 Every commit message must follow this format:
 ```text
-[AI] <short summary of the human's task>
+[AI] #<id> <short summary of the human's task>
 
 
 <longer explanation of what you did and why. One point per row.>
 ```
 
-If the commit is related to a task/issue, the reference to that task in the form `#<id>` (e.g. `#6`) MUST be placed in the subject line immediately after the `[AI]` block, before the summary:
-```text
-[AI] #6 <short summary of the human's task>
-
-
-<longer explanation of what you did and why. One point per row.>
-```
+`#<id>` обязателен в КАЖДОМ коммите, сразу после `[AI]`, до текста — включая
+post-review (рефлексию) и коммиты-правки правил.
+Если коммит не относится к существующей задаче (изменение правил/процесса) —
+сначала заведи meta-issue (`gh issue create -l meta ...`) и сошлись на него.
 
 Every issue/PR comment or description written by AI must follow this format:
 ```text
