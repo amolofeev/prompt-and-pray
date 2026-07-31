@@ -44,6 +44,8 @@ Every commit message must follow this format:
 <longer explanation of what you did and why. One point per row.>
 ```
 
+If the commit is related to a task/issue, the commit message MUST end with a reference to that task in the form `#<id>` (e.g. `#6`).
+
 Every issue/PR comment or description written by AI must follow this format:
 ```text
 [AI] <short summary>
