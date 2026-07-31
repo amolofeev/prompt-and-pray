@@ -61,7 +61,10 @@ When the human says something like "реши задачу 35" or "solve issue 35
 2. **Read comments** — use `gh issue view <number> --comments`
 3. **Implement** — explore the codebase, write code, test it
 4. **Commit** — commit the solution with the standard AI commit format
-5. **Close the issue** — `gh issue close <number> --comment "..."` with a summary of what was done (using the AI-generated comment format above)
+5. **Push** — push the commit to origin (as part of finishing the task or stage, always `git push`)
+6. **Close the issue** — `gh issue close <number> --comment "..."` with a summary of what was done (using the AI-generated comment format above)
+
+> Note: completing a task or stage always ends with a push to origin (`git push`). This applies to every task/stage, not only to issues.
 
 ## Session Cleanup Workflow
 
