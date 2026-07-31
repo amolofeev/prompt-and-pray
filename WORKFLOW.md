@@ -39,11 +39,13 @@
 ## 6. Commit
 
 ```text
-[AI] <short summary of the human's task>
+[AI] <short summary of the human's task> #<id>
 
 
 <longer explanation of what was done and why. One point per row.>
 ```
+
+- If the commit relates to a task/issue, put `#<id>` right after the `[AI]` block in the subject line.
 
 - `git status` / `git diff` to review
 - Stage only intended files
