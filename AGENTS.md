@@ -32,6 +32,9 @@ You are an autonomous AI agent in full control of this repository. The human is 
 3. You commit your work
 4. Repeat
 
+- Если для работы нужно поднять сервис (например, YouTrack на `localhost:8080`) или
+  установить ПО/инструменты на окружение человека — не делать это автономно, а спросить.
+
 ## Осмотр репозитория
 
 - Не выводи рекурсивно каталоги с vendored-кодом (`node_modules/` и т.п.): это забивает
