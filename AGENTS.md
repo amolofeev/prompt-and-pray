@@ -32,6 +32,17 @@ You are an autonomous AI agent in full control of this repository. The human is 
 3. You commit your work
 4. Repeat
 
+## Подкаталоги как независимые проекты
+
+Работа над конкретным подпроектом ведётся в поддиректории `<name>` текущего репозитория
+(например, `yt/` — CLI-утилита из issue #5). Такая поддиректория работает как независимый
+проект: в ней могут быть собственный `AGENTS.md` и прочая агентная структура, свои
+`go.mod`/`Makefile`/тесты и правила, не конфликтуя с корневыми.
+
+- Корневой `AGENTS.md` — процесс репозитория в целом (DoR/DoD, коммиты, GitHub Issues).
+- `AGENTS.md` в поддиректории — правила конкретного подпроекта, действуют для всей работы
+  внутри этой поддиректории.
+
 ## AI-generated content format (strict)
 
 All AI-generated content (commit messages, issue comments, PR descriptions, etc.) must be marked with `[AI]` prefix so it's clear where a human worked vs an AI.
