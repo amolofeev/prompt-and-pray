@@ -1,6 +1,12 @@
 # Техническое задание: CLI-утилита `yt` для YouTrack
 
-Версия документа: **1.0** · Статус: **Черновик** · Дата: 2026-07-31
+Версия документа: **1.1** · Статус: **Черновик** · Дата: 2026-07-31
+
+> Ревизия 1.1 закрывает вопросы ревизии ТЗ (issue #5, комментарий «Ревизия ТЗ…»):
+> исправлена эвристика `id`/`idReadable` (§4.1), проект в `issue create` резолвится в `id`
+> по официальной документации (§3.4), унифицирован формат `--json` (§4.3), добавлены
+> `yt version` (§3.11), exit 130 (§4.4), уточнены `--with-token`, `--editor`, batch-ошибки
+> `/commands` и Приложение А.
 
 Документ является техническим заданием на реализацию CLI-утилиты `yt` на языке **Go 1.24.0**,
 функционально аналогичной `gh` (GitHub CLI), но для локального сервера YouTrack (JetBrains).
@@ -86,7 +92,8 @@
 Поток выполнения команды:
 
 1. `main.go` вызывает `commands.NewRootCommand()` и `Execute()`.
-2. Cobra разбирает флаги и аргументы, загружает конфигурацию (env > config, см. §3.2).
+2. Cobra разбирает флаги и аргументы, загружает конфигурацию
+   (приоритет флаг > env > config > дефолт, см. §3.2).
 3. Команда формирует объект запроса (endpoint, параметры, список `fields`), передаёт в `internal/api.Client`.
 4. Клиент выполняет HTTP-запрос (таймаут, retry, обработка ошибок §4.4–4.5).
 5. Результат передаётся в `internal/output` для рендеринга (TTY-таблица / `--json` / pager).
@@ -256,11 +263,11 @@ token: perm:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 флаги  >  env (YT_*)  >  config.yml  >  встроенные дефолты
 ```
 
-> Примечание: в исходной постановке задачи указан порядок «env > config > флаги».
-> Здесь намеренно принят стандартный порядок «флаги > env > config»: флаг — это самый явный
-> и самый «короткоживущий» способ управления, и переопределять его окружением нельзя
-> (иначе флаг невозможно применить поверх env-переменной, что ломает скрипты).
-> Если требуется строго следовать постановке, это единственное место, которое надо поменять.
+> Решение (подтверждено ревизией, issue #5): принят стандартный порядок
+> «флаги > env > config > дефолт». В исходной постановке указан порядок «env > config > флаги» —
+> он отклонён: иначе флагом нельзя переопределить env-переменную в конкретном вызове,
+> что ломает скрипты/CI (флаг — самый явный и самый «короткоживущий» способ управления).
+> Пересмотр этого пункта возможен только сознательным решением владельца ТЗ.
 
 **Проверка авторизации:** при первом сетевом обращении команда проверяет наличие токена;
 невалидность токена (HTTP 401) обрабатывается по §4.4 (сообщение «не авторизован, выполните `yt auth login`»).
@@ -284,9 +291,12 @@ yt auth login
 ✓ Authenticated as alex@example.com (Alex)
 ```
 
-- В неинтерактивном режиме (нет TTY или задан `--with-token`): токен читается из stdin
-  или флага `--with-token` (значение не печатается и не попадает в shell history),
-  base URL — из флага `--base-url` / `YT_BASE_URL` / дефолта.
+- В неинтерактивном режиме (нет TTY): токен читается из stdin — в этом случае он не
+  печатается и не попадает в shell history/`ps`.
+- Токен, переданный флагом `--with-token`, **не является скрытым**: значение видно
+  в shell history (как аргумент команды) и в списке процессов (`ps`). Это штатное
+  ограничение; указано в справке команды.
+- base URL — из флага `--base-url` / `YT_BASE_URL` / дефолта.
 - Флаги: `--with-token` (string, токен из аргумента/флага), `--base-url` (string).
 - Перед сохранением выполняется проверка токена запросом `GET /users/me`.
 - При успехе конфиг сохраняется; печатается сообщение `✓ Authenticated as <login> (<fullName>)`.
@@ -317,8 +327,11 @@ Guest:    false
 - `--json`:
 
 ```json
-{"base_url":"http://localhost:8080/api","login":"alex","full_name":"Alex","email":"alex@example.com","guest":false}
+{"baseUrl":"http://localhost:8080/api","login":"alex","fullName":"Alex","email":"alex@example.com","guest":false}
 ```
+
+  `baseUrl` — единственное поле, добавляемое утилитой (его нет в ответе `/users/me`);
+  добавление задокументировано в §4.3, именование — camelCase (стиль сервера).
 
 ### 3.4. `yt issue` — работа с задачами
 
@@ -326,9 +339,9 @@ Guest:    false
 |---|---|---|---|
 | `yt issue list [<query>]` | `/issues` | GET | `query`, `customFields`, `fields`, `$skip`, `$top` |
 | `yt issue view <id>` | `/issues/{id}` | GET | `fields` |
-| `yt issue create` | `/issues` | POST | `fields`, `draftId`(нет в v1) |
+| `yt issue create` | `/issues` | POST | `fields`, `draftId`(нет в v1), `muteUpdateNotifications`(нет в v1) |
 | `yt issue edit <id>` | `/issues/{id}` | POST | `fields`, `muteUpdateNotifications` |
-| `yt issue close <id>...` | `/commands` | POST | `fields` |
+| `yt issue close <id>...` | `/commands` | POST | `fields`, `muteUpdateNotifications`(нет в v1) |
 | `yt issue delete <id>` | `/issues/{id}` | DELETE | — |
 | `yt issue comment list <id>` | `/issues/{id}/comments` | GET | `fields`, `$skip`, `$top` |
 | `yt issue comment create <id>` | `/issues/{id}/comments` | POST | `fields` |
@@ -404,6 +417,11 @@ PRJ-43  Fixed     2026-07-02   2026-07-06    alex      Write TZ for yt CLI
 При `--comments` дополнительно запрашивается `GET /issues/{id}/comments`
 (`fields=$type,id,text,created,author(id,login,fullName)`, `$top=$comments-limit`).
 
+`--json` (без `--comments`) — сырой объект Issue (поля из списка выше; `comments` не включён).
+`--json --comments` — тот же объект с добавленным ключом `comments` (массив объектов
+`IssueComment` из отдельного запроса, поля `$type,id,text,created,author(id,login,fullName)`).
+Добавление поля, которого нет в ответе `/issues/{id}`, — задокументированное исключение §4.3.
+
 TTY-вывод:
 
 ```
@@ -430,23 +448,48 @@ Second comment text.
 
 | Флаг | Обязательность | Назначение |
 |---|---|---|
-| `-p, --project string` | да | имя или id проекта |
-| `-t, --title string` | да* | summary; *если задан `--editor`, можно без `-t` |
-| `-b, --body string` | нет | description |
-| `--editor` | нет | открыть `$EDITOR` (или `vi`) для ввода тела |
+| `-p, --project string` | да | shortName, имя или ring-id проекта (резолвится в `project.id`, см. ниже) |
+| `-t, --title string` | да* | summary; *обязателен, если не задан `--editor` |
+| `-b, --body string` | нет | description (взаимоисключающе с `--editor`) |
+| `--editor` | нет | открыть `$EDITOR` (или `vi`) для ввода текста (см. формат шаблона) |
 | `--json` | нет | вывести созданный объект |
 
-Тело запроса (`POST /issues`):
+Резолвинг проекта: по официальной документации YouTrack создание issue требует
+`project` в виде **`id`** (ring-id). Порядок:
+
+1. Если `--project` соответствует ring-id (`^[0-9]+-[0-9]+$`) — используется как есть.
+2. Иначе выполняется `GET /admin/projects?fields=id,shortName,name&$top=200`
+   (у эндпоинта нет query-параметра, поэтому фильтрация клиентская): совпадение ищется
+   по `shortName` (без учёта регистра), затем по `name`. Не найдено →
+   `project <value> not found`, exit 1.
+
+Тело запроса (`POST /issues?fields=id,idReadable,summary,project(id,shortName)`):
 
 ```json
-{"project": {"name": "PRJ"}, "summary": "Fix login flow", "description": "Steps: ..."}
+{"project": {"id": "0-0"}, "summary": "Fix login flow", "description": "Steps: ..."}
 ```
+
+Формат редактора (`--editor`): открывается `$EDITOR` (или `vi`) с шаблоном:
+
+```
+Summary: Fix login flow
+
+Description:
+Steps to reproduce:
+1. ...
+```
+
+- Строка `Summary: <текст>` — summary (обязателен; пусто → `no summary provided`, exit 1).
+- Всё, что после строки `Description:`, — description (может быть пустым).
+- Если задан `-t`, строка `Summary:` в шаблоне подставляется с этим значением,
+  редактируется только description.
+- `-b` и `--editor` взаимоисключающие (одновременное использование — ошибка использования, exit 2).
 
 Поля ответа: `id,idReadable,summary,project(id,shortName)`.
 
 TTY: `✓ Created issue PRJ-42: Fix login flow`. `--json` — объект Issue.
 
-Валидация до запроса: обязателен либо `--title`, либо `--editor`; обязателен `--project`.
+Валидация до запроса: обязателен `--project`; обязателен либо `--title`, либо `--editor`.
 При ошибке 400 сервер вернёт описание — выводится как есть (см. §4.4).
 
 #### `yt issue edit <id>`
@@ -499,8 +542,11 @@ TTY (подтверждение при TTY, если нет `-y`):
 
 `--json` — массив `issues` из ответа.
 
-Если задача уже в запрошенном состоянии — сервер вернёт ошибку; она выводится (§4.4), exit 1
-(без падения остальных задач в пакетном вызове — команда применяется одним запросом к списку).
+Команда применяется **одним запросом** к списку задач. Если команда не может быть применена
+(например, нет прав или задача уже в запрошенном состоянии), сервер возвращает HTTP-ошибку
+(400/403) с `error_description` для **всего** запроса — изменения не применяются, CLI выводит
+ошибку (§4.4) и завершается с exit 1. Частичное применение к части списка не документируется;
+фактическое поведение фиксируется интеграционным тестом (§5.4) против целевого сервера.
 
 #### `yt issue delete <id>`
 
@@ -586,7 +632,7 @@ state: Open — matches issues in Open state
 
 | Команда | Эндпоинт | Метод | Параметры запроса |
 |---|---|---|---|
-| `yt command "<команды>" <issue>...` | `/commands` | POST | `fields` |
+| `yt command "<команды>" <issue>...` | `/commands` | POST | `fields`, `muteUpdateNotifications`(нет в v1) |
 | `yt command assist "<команды>"` | `/commands/assist` | POST | `fields` |
 
 #### `yt command "<commands>" <issue>...`
@@ -714,6 +760,32 @@ auth     true
 Эти команды должны строиться на тех же примитивах `internal/api` (fields, retry, ошибки)
 и `internal/output` (table/json/pager), без новых механизмов.
 
+### 3.11. `yt version`
+
+Служебная команда — вывод версии утилиты. Не требует токена и подключения к серверу.
+
+TTY:
+
+```
+yt version 0.0.1-pre-alpha
+commit: 2036315
+built:  2026-07-31T12:00:00Z
+go:     go1.24.0
+os:     linux
+arch:   amd64
+```
+
+- `commit` и `built` встраиваются через `-ldflags` (§1.4); при сборке без них — `unknown`.
+- `--json`:
+
+```json
+{"version":"0.0.1-pre-alpha","commit":"2036315","built":"2026-07-31T12:00:00Z","go":"go1.24.0","os":"linux","arch":"amd64"}
+```
+
+- Встроенный флаг Cobra `--version` на корне печатает только первую строку
+  (`yt version 0.0.1-pre-alpha`) и завершается с кодом 0.
+- Флаг `--json` не требует авторизации и работает без сети.
+
 ---
 
 ## 4. Ключевые технические требования
@@ -721,11 +793,17 @@ auth     true
 ### 4.1. Идентификация задач: `id` и `idReadable`
 
 - Все команды `issue`/`command`, принимающие `<id>`, работают и с ring-id (`2-1`),
-  и с человекочитаемым `idReadable` (`PRJ-42`). Значение передаётся в path-параметр `{id}`
-  с обязательным URL-кодированием (`url.PathEscape`).
+  и с человекочитаемым `idReadable` (`PRJ-42`).
+- Для path-параметра `{id}` (`issue view/edit/delete`, `issue comment ...`) значение
+  передаётся без преобразований — YouTrack резолвит оба формата (подтверждено официальной
+  документацией). Обязательно URL-кодирование (`url.PathEscape`).
 - Для `yt issue close <id>...` и `yt command ... <issue>...` идентификаторы передаются
-  в теле запроса в виде `{"idReadable": "..."}` **или** `{"id": "..."}` — решение о выборе
-  поля принимается по форме значения (строка вида `^[A-Z0-9]+-\d+$` → `idReadable`, иначе → `id`).
+  в теле запроса как `{"idReadable": "..."}` или `{"id": "..."}`. Выбор поля — по форме
+  значения (детерминированно, форматы не пересекаются):
+  - `^[0-9]+-[0-9]+$` (например `2-1`) → ring-id → `{"id": "<значение>"}`;
+  - `^[A-Za-z][A-Za-z0-9]*-[0-9]+$` (например `PRJ-42`, `B2B-3`; сравнение без учёта
+    регистра) → `idReadable` → `{"idReadable": "<значение>"}`;
+  - остальное → ошибка использования (`cannot parse issue id: <value>`, exit 2).
 - Неизвестная задача (HTTP 404) → сообщение вида `Issue PRJ-999 not found`, exit 1.
 
 ### 4.2. Параметр `fields`
@@ -759,6 +837,9 @@ auth     true
   («ошибка», «результат») и без ANSI. Совместим с `jq`.
 - Все временные метки остаются unix-миллисекундами (`created`, `updated`, `resolved`) —
   как их отдаёт сервер. Человекочитаемые даты — только в TTY.
+- Исключения — поля, добавляемые утилитой к ответу сервера — допускаются только если явно
+  перечислены в разделе команды (именование camelCase, как у сервера):
+  `auth status --json` → `baseUrl` (§3.3); `issue view --comments --json` → `comments` (§3.4).
 - `--json` валиден только при exit-коде 0; при ошибке в stderr — сообщение, stdout пуст.
 
 **Требование к stdout/stderr:** данные — только в stdout, служебное — только в stderr.
@@ -772,6 +853,7 @@ auth     true
 | `0` | успех |
 | `1` | runtime/API ошибка (HTTP 4xx/5xx, сеть, нет токена) |
 | `2` | ошибка использования CLI (неизвестная команда/флаг, невалидные аргументы, `--help` не применим) |
+| `130` | отменено пользователем (SIGINT/SIGTERM, см. §4.5) |
 
 **Формат сообщения об ошибке (stderr, один блок):**
 
@@ -923,18 +1005,18 @@ yt: <краткое сообщение>
 
 | Команда yt | Эндпоинт | Метод | Query-параметры | Поля (fields) |
 |---|---|---|---|---|
-| `auth login/status`, `user whoami` | `/users/me` | GET | `fields` | `id,login,fullName,email,guest,avatarUrl` |
+| `auth login/status`, `user whoami` | `/users/me` | GET | `fields` | `id,login,fullName,email,guest,avatarUrl` (union; наборы по командам — §3.3/§3.8) |
 | `issue list` | `/issues` | GET | `query`, `customFields`, `fields`, `$skip`, `$top` | см. §3.4 |
 | `issue view` | `/issues/{id}` | GET | `fields` | см. §3.4 |
-| `issue create` | `/issues` | POST | `fields` | `id,idReadable,summary,project(id,shortName)` |
+| `issue create` | `/issues` | POST | `fields`; `draftId`, `muteUpdateNotifications` — есть в спеке, в v1 не используются | `id,idReadable,summary,project(id,shortName)` |
 | `issue edit` | `/issues/{id}` | POST | `fields`, `muteUpdateNotifications` | `id,idReadable,summary,description` |
-| `issue close` | `/commands` | POST | `fields` | `issues(id,idReadable,summary,resolved,project(id,shortName))` |
+| `issue close` | `/commands` | POST | `fields`; `muteUpdateNotifications` — есть в спеке, в v1 не используется | `issues(id,idReadable,summary,resolved,project(id,shortName))` |
 | `issue delete` | `/issues/{id}` | DELETE | — | — |
 | `issue comment list` | `/issues/{id}/comments` | GET | `fields`, `$skip`, `$top` | `$type,id,text,created,author(id,login,fullName)` |
 | `issue comment create` | `/issues/{id}/comments` | POST | `fields` | `$type,id,text,created,author(id,login)` |
 | `search <q>` | `/issues` | GET | `query`, `fields`, `$skip`, `$top` | как `issue list` |
 | `search suggest` | `/search/assist` | POST | `fields` | `query,suggestions(option,description,prefix,suffix,group)` |
-| `command` | `/commands` | POST | `fields` | `issues(id,idReadable,summary,resolved,project(id,shortName))` |
+| `command` | `/commands` | POST | `fields`; `muteUpdateNotifications` — есть в спеке, в v1 не используется | `issues(id,idReadable,summary,resolved,project(id,shortName))` |
 | `command assist` | `/commands/assist` | POST | `fields` | `query,suggestions(option,description,prefix,suffix,group)` |
 | `project list` | `/admin/projects` | GET | `fields`, `$skip`, `$top` | `id,name,shortName,archived,leader(id,login,fullName)` |
 | `tag list` | `/tags` | GET | `query`, `fields`, `$skip`, `$top` | `id,name,untagOnResolve` |
