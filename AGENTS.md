@@ -74,7 +74,37 @@ When a task needs to be decomposed into subtasks (e.g. "декомпозируй
 2. **Create with parent link** — `gh issue create --parent <parent-number>` for each subtask (the `--parent` flag links it as a sub-issue right away; do NOT rely on body references alone). Reference the parent issue and relevant spec sections in the body (AI-format).
 3. **Verify** — confirm the link: `gh issue view <parent-number> --json subIssues` shows all created subtasks.
 4. **Summarize** — leave a summary comment on the parent issue listing the created subtasks.
-5. **Tag** — apply a relevant label (e.g. `subtask`) to make subtasks greppable.
+5. **Tag** — apply a relevant label to make tasks greppable: `subtask` — этапы (стадии),
+   `atomic` — атомарные задачи декомпозиции, `meta` — задачи на доработку агента.
+
+### DoR / DoD workflow (для задач реализации)
+
+Приступать к задаче (этапу или атому) можно только когда выполнен **DoR**:
+
+- Связи `blocked-by` закрыты (все зависимые задачи выполнены).
+- Объём однозначен: разделы SPEC/документации, эндпоинты, флаги, поведение.
+- Критерии приёмки (DoD) записаны в задаче.
+- Оценка присутствует.
+- Затрагиваемые эндпоинты сверены с актуальной спецификацией сервера
+  (отклонения зафиксированы в комментарии/`docs/PROGRESS.md`).
+
+Если DoR не выполнен — задачу в работу не брать: дождаться закрытия зависимостей
+или вернуть задачу с комментарием о неготовности.
+
+Задача считается **выполненной (DoD)** только при выполнении ВСЕХ пунктов:
+
+1. Реализован весь объём по SPEC (команды, флаги, TTY/JSON-поведение).
+2. Тесты добавлены и проходят: юнит (валидация, query/тела запросов), `httptest`
+   для API, golden для вывода; покрытие `internal/config`, `internal/api`
+   (парсинг ошибок), `internal/output` — не ниже 70%.
+3. `go fmt ./...`, `go vet ./...`, `golangci-lint run`, `go build ./...` — без
+   замечаний; `go mod tidy` не меняет `go.mod`/`go.sum`.
+4. Поведение проверено против живого сервера (интеграционно) ИЛИ явно помечено
+   как отложенное (например, «интеграция — Атом 8.3»).
+5. stdout — только данные, stderr — только служебное; токен нигде не выводится
+   и не логируется; `--json` валиден (проверка `jq`).
+6. Коммит в формате [AI] со ссылкой на задачу `#N`, изменения запушены в origin.
+7. Задача закрыта с [AI]-комментарием и подтверждением DoD-чеклиста.
 
 ## Session Cleanup Workflow
 
