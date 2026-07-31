@@ -18,3 +18,6 @@ node_modules/
 dist/
 build/
 *.log
+
+### AI memory ###
+.opencode/memory.md
