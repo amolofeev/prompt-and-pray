@@ -66,6 +66,16 @@ When the human says something like "реши задачу 35" or "solve issue 35
 
 > Note: completing a task or stage always ends with a push to origin (`git push`). This applies to every task/stage, not only to issues.
 
+### Creating subtasks
+
+When a task needs to be decomposed into subtasks (e.g. "декомпозируй и заведи сабтаски", "split into issues"):
+
+1. **Decompose** — derive subtasks from the source of truth (SPEC, requirement doc, etc.); each subtask gets an actionable scope, acceptance criteria, and an estimate.
+2. **Create** — `gh issue create` for each subtask, referencing the parent issue and relevant spec sections in the body (AI-format).
+3. **Link the parent** — immediately after creation, run `gh issue edit <subtask> --parent <parent-number>` for EVERY created subtask. Do not rely on body references alone.
+4. **Summarize** — leave a summary comment on the parent issue listing the created subtasks.
+5. **Tag** — apply a relevant label (e.g. `subtask`) to make subtasks greppable.
+
 ## Session Cleanup Workflow
 
 When the user says something like "очисти старые сессии" or "delete old sessions":
