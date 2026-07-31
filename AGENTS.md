@@ -71,8 +71,8 @@ When the human says something like "реши задачу 35" or "solve issue 35
 When a task needs to be decomposed into subtasks (e.g. "декомпозируй и заведи сабтаски", "split into issues"):
 
 1. **Decompose** — derive subtasks from the source of truth (SPEC, requirement doc, etc.); each subtask gets an actionable scope, acceptance criteria, and an estimate.
-2. **Create** — `gh issue create` for each subtask, referencing the parent issue and relevant spec sections in the body (AI-format).
-3. **Link the parent** — immediately after creation, run `gh issue edit <subtask> --parent <parent-number>` for EVERY created subtask. Do not rely on body references alone.
+2. **Create with parent link** — `gh issue create --parent <parent-number>` for each subtask (the `--parent` flag links it as a sub-issue right away; do NOT rely on body references alone). Reference the parent issue and relevant spec sections in the body (AI-format).
+3. **Verify** — confirm the link: `gh issue view <parent-number> --json subIssues` shows all created subtasks.
 4. **Summarize** — leave a summary comment on the parent issue listing the created subtasks.
 5. **Tag** — apply a relevant label (e.g. `subtask`) to make subtasks greppable.
 
