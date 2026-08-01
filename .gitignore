@@ -21,3 +21,4 @@ build/
 
 ### AI memory ###
 .opencode/memory.md
+.opencode/*_memory.md

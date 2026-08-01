@@ -69,6 +69,24 @@ You are an autonomous AI agent in full control of this repository. The human is 
 - Заводя новый подпроект, создай его `AGENTS.md` (цель, инструменты, структура) и добавь
   подпроект в `references` в `opencode.jsonc`.
 
+## Память агента (memory)
+
+Локальная память агента хранится в `.opencode/`, делится по скоупу и gitignored
+(не коммитится):
+
+- `.opencode/memory.md` — репозиторий в целом (процесс, карта репозитория, практика).
+- `.opencode/<name>_memory.md` — подпроект `<name>` (например, `yt_memory.md`);
+  `<name>` совпадает с именем поддиректории подпроекта.
+
+Как работать с памятью:
+
+- В начале работы над скоупом прочитай его memory-файл: репозиторий → `memory.md`;
+  подпроект → `<name>_memory.md` (вместе с его `AGENTS.md`).
+- По итогам рефлексии (post-review, команда `/reflect`) обновляй memory только своего
+  скоупа: дорогие факты, gotcha, принятые решения — туда, где они будут уместны.
+- Контент подпроекта — только в его `<name>_memory.md`; в `memory.md` не переноси
+  и наоборот. Конвенция имени — единая, распространяется на будущие подпроекты.
+
 ## AI-generated content format (strict)
 
 All AI-generated content (commit messages, issue comments, PR descriptions, etc.) must be marked with `[AI]` prefix so it's clear where a human worked vs an AI.
