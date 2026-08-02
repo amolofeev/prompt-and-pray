@@ -17,7 +17,7 @@
 | Атомы | 30/30 закрыто (включая #52 — добавлен в этап 8) |
 | Покрытие (8.5, #52) | `internal/api` 89.2% · `internal/commands` 87.7% · `internal/config` 80.9% · `internal/output` 89.7% (порог ≥70%) |
 | Сверка с openapi.json | 2026-08-02, API 2025.3, расхождений нет |
-| Meta-задачи | #47 (этот трекер, закрывается при создании), #46 (открыт) |
+| Meta-задачи | #47 (этот трекер, закрывается при создании), #46 (закрыт 2026-08-02) |
 
 ---
 
@@ -148,4 +148,4 @@
 | Задача | Статус |
 |---|---|
 | [#47](https://github.com/amolofeev/prompt-and-pray/issues/47) docs/PROGRESS.md — этот трекер | закрывается при создании |
-| [#46](https://github.com/amolofeev/prompt-and-pray/issues/46) Workflow интеграционных тестов против живого YouTrack (AGENTS.md) | 🟡 открыт |
+| [#46](https://github.com/amolofeev/prompt-and-pray/issues/46) Workflow интеграционных тестов против живого YouTrack (AGENTS.md) | ✅ закрыт 2026-08-02 |
