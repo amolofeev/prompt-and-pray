@@ -179,6 +179,26 @@ When a task needs to be decomposed into subtasks (e.g. "декомпозируй
    решения/отклонения, находки интеграционных проверок, дата сверки с
    `openapi.json` §4.8) — в том же коммите, что и закрытие.
 
+## Integration testing workflow
+
+Интеграционные проверки против живого YouTrack (`localhost:8080`) — только с
+явного разрешения (сервер/токен человека автономно не трогать, правило выше):
+
+- Прогон — за `YT_INTEGRATION=1` (`make integration` из `yt/`), окружение
+  `YT_BASE_URL`/`YT_TOKEN`; мутирующие тесты (create/edit/close/command/comment/
+  delete) дополнительно требуют `YT_INTEGRATION_MUTATE=1`.
+- Безопасность данных: тесты на `create`/`delete` по умолчанию — `t.Skip`
+  (SPEC §5.4); реальные данные не создаются/не удаляются без явного
+  разрешения, мутирующие тесты работают со смоук-ишью и чистят за собой.
+- Находки и расхождения фиксируются в `docs/PROGRESS.md` (атомарность
+  `/commands`, резолвинг проекта по `shortName`/`name`, отклонения от
+  `openapi.json` §4.8).
+- В CI интеграционные тесты не запускаются (SPEC §5.4) — CI гоняет только
+  юнит/httptest/golden.
+
+Детали реализации (мишень, переменные окружения, атомарность `/commands`) —
+`yt/AGENTS.md`, раздел «Интеграционные тесты».
+
 ## Session Cleanup Workflow
 
 When the user says something like "очисти старые сессии" or "delete old sessions":
