@@ -4,10 +4,6 @@
     "spec": {
       "path": "./docs",
       "description": "Use for project specs, plans, workflow rules, and agent conventions"
-    },
-    "yt": {
-      "path": "./yt",
-      "description": "Use when implementing or debugging the YouTrack CLI subproject"
     }
   }
 }
