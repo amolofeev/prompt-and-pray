@@ -32,8 +32,8 @@ You are an autonomous AI agent in full control of this repository. The human is 
 3. You commit your work
 4. Repeat
 
-- Если для работы нужно поднять сервис (например, YouTrack на `localhost:8080`) или
-  установить ПО/инструменты на окружение человека — не делать это автономно, а спросить.
+- Если для работы нужно поднять сервис или установить ПО/инструменты на окружение
+  человека — не делать это автономно, а спросить.
 
 ## Осмотр репозитория: поиск по поддереву
 
@@ -68,11 +68,6 @@ You are an autonomous AI agent in full control of this repository. The human is 
   и ссылки на локальную документацию.
 - Заводя новый подпроект, создай его `AGENTS.md` (цель, инструменты, структура) и добавь
   подпроект в `references` в `opencode.jsonc`.
-
-> Подпроект `yt` (YouTrack CLI, Go) мигрирован в отдельный git-репозиторий
-> [amolofeev/youtrack-cli](https://github.com/amolofeev/youtrack-cli) (#53, 2026-08-02):
-> история перенесена `git subtree` split, `yt/` из монорепо удалён, корень его не
-> обслуживает. Все правила yt — в `AGENTS.md` того репозитория.
 
 ## Память агента (memory)
 
@@ -133,9 +128,9 @@ When the human says something like "реши задачу 35" or "solve issue 35
 > Note: completing a task or stage always ends with a push to origin (`git push`). This applies to every task/stage, not only to issues.
 
 When all atoms of a stage are closed but the stage issue is still open, the stage
-needs its own DoD closure: verify the checklist, update `docs/PROGRESS.md`, and
-close the stage with an [AI]-comment confirming DoD. Don't treat "all atoms done"
-as equivalent to "stage closed".
+needs its own DoD closure: verify the checklist and close the stage with an
+[AI]-comment confirming DoD. Don't treat "all atoms done" as equivalent to
+"stage closed".
 
 ### Creating subtasks
 
@@ -147,14 +142,6 @@ When a task needs to be decomposed into subtasks (e.g. "декомпозируй
 4. **Summarize** — leave a summary comment on the parent issue listing the created subtasks.
 5. **Tag** — apply a relevant label to make tasks greppable: `subtask` — этапы (стадии),
    `atomic` — атомарные задачи декомпозиции, `meta` — задачи на доработку агента.
-
-### DoR / DoD и интеграционные гейты
-
-Детальные DoR/DoD-правила (DoR-чек, критерии приёмки с покрытием ≥70%, гейты
-`go fmt`/`vet`/`lint`, отложенная интеграция) и гейты интеграционных проверок —
-специфичны для мигрировавшего подпроекта `yt` и живут в `AGENTS.md` репозитория
-`youtrack-cli` (разделы «DoR / DoD workflow» и «Интеграционные тесты»). Для корневых
-задач действует общий процесс «GitHub Issues Workflow» выше.
 
 ## Session Cleanup Workflow
 

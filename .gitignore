@@ -22,6 +22,3 @@ build/
 ### AI memory ###
 .opencode/memory.md
 .opencode/*_memory.md
-
-### API snapshot (OpenAPI-спека YouTrack, переживает сессии) ###
-.opencode/openapi.json

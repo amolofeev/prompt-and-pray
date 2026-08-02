@@ -1,17 +1,5 @@
 # Changelog
 
-## [Unreleased] — 2026-08-02
-
-### Changed
-
-- **`yt` migrated to a standalone repository** — all yt files (code, CI,
-  release.yml, `.opencode/` memory & API snapshot, SPEC/PLAN, VERSION) moved into
-  `yt/`, module renamed to `github.com/amolofeev/youtrack-cli`, then the whole
-  history was split via `git subtree` and pushed to
-  [amolofeev/youtrack-cli](https://github.com/amolofeev/youtrack-cli). First release
-  `v0.0.1-pre-alpha` created there (CI + Release workflows green). `yt/` removed from
-  this repository; root docs archived as history (#53).
-
 ## [0.0.1-pre-alpha] — 2026-07-30
 
 ### Added
