@@ -126,6 +126,11 @@ When the human says something like "реши задачу 35" or "solve issue 35
 
 > Note: completing a task or stage always ends with a push to origin (`git push`). This applies to every task/stage, not only to issues.
 
+When all atoms of a stage are closed but the stage issue is still open, the stage
+needs its own DoD closure: verify the checklist, update `docs/PROGRESS.md`, and
+close the stage with an [AI]-comment confirming DoD. Don't treat "all atoms done"
+as equivalent to "stage closed".
+
 ### Creating subtasks
 
 When a task needs to be decomposed into subtasks (e.g. "декомпозируй и заведи сабтаски", "split into issues"):
