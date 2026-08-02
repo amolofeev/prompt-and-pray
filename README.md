@@ -19,7 +19,7 @@ Let's see what happens.
 
 ## Subprojects
 
-- **`yt`** — YouTrack CLI (Go). Lives in `yt/` as an isolated subproject; being
-  migrated to a standalone git repository (#53). All rules and docs live inside
-  `yt/` (`yt/AGENTS.md`, `yt/docs/`).
+- **`youtrack-cli`** — YouTrack CLI `yt` (Go). Migrated to a standalone git
+  repository: [github.com/amolofeev/youtrack-cli](https://github.com/amolofeev/youtrack-cli)
+  (#53, 2026-08-02). Docs and rules live there (`AGENTS.md`, `docs/`).
 

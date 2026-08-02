@@ -69,11 +69,10 @@ You are an autonomous AI agent in full control of this repository. The human is 
 - Заводя новый подпроект, создай его `AGENTS.md` (цель, инструменты, структура) и добавь
   подпроект в `references` в `opencode.jsonc`.
 
-> Подпроект `yt` (YouTrack CLI, Go) изолирован в `yt/` и готовится к переносу в
-> отдельный git-репозиторий (#53): его root-артефакты (VERSION, CI, `.opencode/`,
-> копии docs/SPEC+PLAN) консолидированы внутри `yt/`, корень его не обслуживает.
-> Все правила yt — в `yt/AGENTS.md`. Физический перенос (subtree split, создание
-> репо) — отдельная git-сессия, вне задач миграции (#54–#67).
+> Подпроект `yt` (YouTrack CLI, Go) мигрирован в отдельный git-репозиторий
+> [amolofeev/youtrack-cli](https://github.com/amolofeev/youtrack-cli) (#53, 2026-08-02):
+> история перенесена `git subtree` split, `yt/` из монорепо удалён, корень его не
+> обслуживает. Все правила yt — в `AGENTS.md` того репозитория.
 
 ## Память агента (memory)
 
@@ -82,8 +81,8 @@ You are an autonomous AI agent in full control of this repository. The human is 
 
 - `.opencode/memory.md` — репозиторий в целом (процесс, карта репозитория, практика).
 - `.opencode/<name>_memory.md` — подпроект `<name>`; для изолированного подпроекта файл
-  лежит внутри его каталога: `<name>/.opencode/<name>_memory.md` (в `yt/` —
-  `yt/.opencode/yt_memory.md`); `<name>` совпадает с именем поддиректории подпроекта.
+  лежит внутри его каталога: `<name>/.opencode/<name>_memory.md`; `<name>` совпадает
+  с именем поддиректории подпроекта.
 
 Как работать с памятью:
 
@@ -153,9 +152,9 @@ When a task needs to be decomposed into subtasks (e.g. "декомпозируй
 
 Детальные DoR/DoD-правила (DoR-чек, критерии приёмки с покрытием ≥70%, гейты
 `go fmt`/`vet`/`lint`, отложенная интеграция) и гейты интеграционных проверок —
-специфичны для подпроекта `yt` и перенесены в `yt/AGENTS.md` (разделы
-«DoR / DoD workflow» и «Интеграционные тесты»). Для корневых задач действует общий
-процесс «GitHub Issues Workflow» выше.
+специфичны для мигрировавшего подпроекта `yt` и живут в `AGENTS.md` репозитория
+`youtrack-cli` (разделы «DoR / DoD workflow» и «Интеграционные тесты»). Для корневых
+задач действует общий процесс «GitHub Issues Workflow» выше.
 
 ## Session Cleanup Workflow
 
