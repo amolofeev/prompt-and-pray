@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased] — 2026-08-02
+
+### Changed
+
+- **yt subproject isolated** — all yt files consolidated into `yt/` (VERSION, CI
+  workflow, `.opencode/` memory & API snapshot, copies of SPEC/PLAN); root no longer
+  manages yt. Module renamed to `github.com/amolofeev/yt`; `VERSION := $(shell cat VERSION)`.
+  Migration to a standalone git repository is in progress (#53).
+
 ## [0.0.1-pre-alpha] — 2026-07-30
 
 ### Added
