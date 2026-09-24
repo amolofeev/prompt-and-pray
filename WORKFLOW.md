@@ -13,15 +13,15 @@
 - Examine README, AGENTS.md, WORKFLOW.md, package.json, etc.
 - Check git log for recent context
 
-## 3. Plan (planner → task graph)
+## 3. Plan (Team Lead → task graph)
 
 Issue-level planning follows the harness model in AGENTS.md (GitHub Issues Workflow):
 build the task graph, apply the atomicity criterion, wire
 `Depends on: #<n>` / `Blocks: #<n>` edges, insert infrastructure vertices. Before
-implementing, the scheduler computes the ready set — an open blocker means wait, not
+implementing, the Scrum Master computes the ready set — an open blocker means wait, not
 start (see AGENTS.md "Ready set").
 
-Phases run as opencode subagents (`planner`/`scheduler`/`executor`, `.opencode/agent/`,
+Phases run as opencode subagents (`team-lead`/`scrum-master`/`developer`, `.opencode/agent/`,
 spec in `docs/harness-agents.md`), orchestrated by the `harness-workflow` skill;
 fall back to direct execution when subagents are not loaded yet (opencode restart pending).
 

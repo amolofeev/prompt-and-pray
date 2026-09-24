@@ -122,11 +122,16 @@ Every issue/PR comment or description written by AI must follow this format:
 
 ## GitHub Issues Workflow (граф задач)
 
-Работа идёт по модели harness: **planner → task graph → scheduler → executor**.
-Планировщик строит граф работ, исполнитель трогает только вершины из ready set.
-Планирование и исполнение — разные фазы, а не один шаг.
+Работа идёт по модели harness, где роли названы реальными позициями
+среднестатистической IT-команды: **Team Lead (task graph) → Scrum Master (ready set)
+→ Developer (исполнение)**. Team Lead строит граф работ, Developer трогает только
+вершины из ready set. Планирование и исполнение — разные фазы, а не один шаг.
 
-Фазы исполняются opencode-субагентами `.opencode/agent/{planner,scheduler,executor}.md`
+Маппинг «позиция → фаза графа»: Team Lead = Planning (декомпозиция/атомарность),
+Scrum Master = Scheduling (ready set/блокеры), Developer = Execution (реализация,
+верификация, закрытие).
+
+Фазы исполняются opencode-субагентами `.opencode/agent/{team-lead,scrum-master,developer}.md`
 (спецификация — `docs/harness-agents.md`); дефолтный ход оркестрирует skill
 `harness-workflow` (`.opencode/skills/harness-workflow/SKILL.md`). Шаги ниже —
 справочная семантика ролей: при работающих субагентах действуй через них.
@@ -144,28 +149,28 @@ When the human says something like "реши задачу 35" or "solve issue 35
   сущность, а не комментарий в обсуждении.
 - Сквозные/инфраструктурные вершины («основа проекта», «тесты», «CI») — такие же
   вершины графа с рёбрами от них к задачам, которые от них зависят. При раскрытии
-  любой задачи планировщик проверяет, требуют ли её листья новых инфраструктурных
+  любой задачи Team Lead проверяет, требуют ли её листья новых инфраструктурных
   предусловий, и вставляет такие вершины с рёбрами блокеров.
 
 ### Фазы
 
-1. **Planner** (субагент `planner`) — read the issue: `gh issue view <number>` и `gh issue view
+1. **Team Lead** (субагент `team-lead`, фаза Planning) — read the issue: `gh issue view <number>` и `gh issue view
    <number> --comments`. Вопрос «атомарна ли задача» решай по чек-листу
    («Критерий атомарности»), а не на глаз: составная → раскрой в подграф
    (`gh issue create --parent`), проставь рёбра зависимостей. Задача-анализ —
    задача-понимание: её результат порождает задачи на исполнение (новые
    листья/подграфы с рёбрами зависимости от неё; атомарный результат анализа
    заводится сабтаской к корневой).
-2. **Scheduler** (субагент `scheduler`) — перед каждым взятием вычисли ready set
+2. **Scrum Master** (субагент `scrum-master`, фаза Scheduling) — перед каждым взятием вычисли ready set
    по рёбрам-блокерам
    (см. «Ready set»): все блокеры CLOSED → задача к исполнению; открытый блокер →
-   задача в работу не берётся, это блокер/ожидание. Решает scheduler, а не воля
+   задача в работу не берётся, это блокер/ожидание. Решает scrum-master, а не воля
    исполнителя.
-3. **Executor** (субагент `executor`) — explore the codebase, write code, test it;
+3. **Developer** (субагент `developer`, фаза Execution) — explore the codebase, write code, test it;
    commit with the
    standard AI format; push; close: `gh issue close <number> --comment "..."` with
    a summary of what was done (AI-generated comment format).
-4. Возврат к planner: закрытие вершины может открыть новые — граф расширяется.
+4. Возврат к Team Lead: закрытие вершины может открыть новые — граф расширяется.
 
 > Note: completing a task or stage always ends with a push to origin (`git push`). This applies to every task/stage, not only to issues.
 
@@ -184,7 +189,7 @@ When the human says something like "реши задачу 35" or "solve issue 35
 
 ### Ready set
 
-Исполнять можно только вершины, у которых все рёбра-блокеры закрыты. Scheduler
+Исполнять можно только вершины, у которых все рёбра-блокеры закрыты. Scrum Master
 вычисляет ready set по состояниям referenced-issues **перед стартом каждой
 задачи**: парси `Depends on:` / `Blocks:` из тела и проверяй
 `gh issue view <n> --json state`. Все блокеры CLOSED → в работу; иначе задача
