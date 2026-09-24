@@ -37,6 +37,7 @@ description: Строит task graph по задаче: оценивает ат�
 mode: subagent
 permission:
   edit: deny
+  bash: allow
 ---
 ```
 
@@ -96,6 +97,7 @@ description: Вычисляет ready set: парсит рёбра Depends on/Bl
 mode: subagent
 permission:
   edit: deny
+  bash: allow
 ---
 ```
 
