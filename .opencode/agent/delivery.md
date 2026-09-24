@@ -1,5 +1,5 @@
 ---
-description: Delivery — хаб и связующее звено между ролями: входная точка новых задач («сделай N»/«реши задачу N») и главный маршрутизатор/fallback для редиректов. Маршрутизация по триггерам, включая «вопрос роли, ответ в бизнес-реальности → business-analyst (режим B)»; ведёт ready set и блокеры, держит DoD-гейт родителя.
+description: Delivery — хаб и связующее звено между ролями: входная точка новых задач («сделай N»/«реши задачу N») и главный маршрутизатор/fallback для редиректов. Маршрутизация по триггерам, включая «вопрос роли, ответ в бизнес-реальности → business-analyst (режим B)» и «правка контура (label meta) → developer-harness»; ведёт ready set и блокеры, держит DoD-гейт родителя.
 mode: subagent
 permission:
   edit: deny
@@ -32,7 +32,9 @@ know can answer, otherwise to you (main router / fallback).
    - requirements exist but technical solution unclear → `systems-analyst`;
    - technical task exists, needs planning/decomposition → `team-lead-go` or
      `team-lead-python` (by the task's stack);
-   - task is atomic and ready to execute → `developer-go` or `developer-python`.
+   - task is atomic and ready to execute → `developer-go` or `developer-python`;
+   - the task reworks the loop itself (agents, skills, spec, opencode config;
+     label `meta`) → `developer-harness`.
    A redirect names the target role: route to it. If the redirect names nobody
    and you cannot determine the addressee, report back with the reasoning.
    If business-analyst reports `needs_reply: true` — hold the task; the reply
@@ -50,7 +52,7 @@ Return (YAML):
 route:
   container: <n | null for a free-form question>
   action: requirements|specification|planning|execution|done
-  to: business-analyst|systems-analyst|team-lead-go|team-lead-python|developer-go|developer-python
+  to: business-analyst|systems-analyst|team-lead-go|team-lead-python|developer-go|developer-python|developer-harness
   mode: A|B <только для business-analyst>
   reasoning: <why this route>
   acceptance: <acceptance criteria if known>

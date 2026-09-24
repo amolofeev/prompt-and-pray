@@ -31,7 +31,8 @@ delivery (хаб; главный маршрутизатор/fallback)
    ├─ вопрос роли, ответ в бизнес-реальности ─► business-analyst (B) ─► доп.требования ► отправителю
    ├─ требования есть, тех.решение неясно ─► systems-analyst ─► тех.спека ► delivery
    ├─ тех.задача есть, нужен план/декомпозиция ─► team-lead-<стек> ─► граф ► delivery
-   └─ атомарная и готова к исполнению ─► developer-<стек> ─► реализация+close ► delivery
+   ├─ атомарная и готова к исполнению ─► developer-<стек> ─► реализация+close ► delivery
+   └─ правка самого контура (label meta) ─► developer-harness ─► правка+close ► delivery
 
 Между ролями — прямое адресование; неадресованный вопрос → редирект
 (к знающему адресату или к delivery).
@@ -48,6 +49,7 @@ delivery (хаб; главный маршрутизатор/fallback)
 | team-lead-python | `.opencode/agent/team-lead-python.md` | планирование Python-задач |
 | developer-go | `.opencode/agent/developer-go.md` | исполнение Go-задач |
 | developer-python | `.opencode/agent/developer-python.md` | исполнение Python-задач |
+| developer-harness | `.opencode/agent/developer-harness.md` | исполнение правок самого контура (meta) |
 
 Все роли: `mode: subagent`. Права задаются frontmatter-полем `permission`
 (см. раздел каждой роли). Субагент обязан первым делом прочитать
@@ -73,7 +75,9 @@ delivery (хаб; главный маршрутизатор/fallback)
 - вопрос роли, ответ в бизнес-реальности → `business-analyst` (режим B);
 - требования есть, тех.решение неясно → `systems-analyst`;
 - тех.задача есть, нужен план/декомпозиция → `team-lead-<стек>` (по стеку);
-- атомарная и готова к исполнению → `developer-<стек>`.
+- атомарная и готова к исполнению → `developer-<стек>`;
+- правка самого контура (агенты/скилы/спека/конфиги opencode; label `meta`) →
+  `developer-harness`.
 - Редирект называет адресата — маршрут туда; если адресат не назван и delivery
   тоже не может его определить — вернуть отчёт с reasoning.
 - Если business-analyst вернул `needs_reply: true` — задача удерживается до
@@ -94,7 +98,7 @@ delivery (хаб; главный маршрутизатор/fallback)
 route:
   container: N | null (вопрос без номера issue)
   action: requirements|specification|planning|execution|done
-  to: business-analyst|systems-analyst|team-lead-go|team-lead-python|developer-go|developer-python
+  to: business-analyst|systems-analyst|team-lead-go|team-lead-python|developer-go|developer-python|developer-harness
   mode: A|B (только для business-analyst)
   reasoning: <почему этот маршрут>
   acceptance: <критерии приёмки, если известны>
@@ -278,6 +282,30 @@ unblocked: [ <#n> ]
 
 Формат commit/close и порядок верификации — из skill `harness-workflow`;
 операции с задачами (close, unblocked) — из skill `tasks-gh`.
+
+---
+
+## 5a. developer-harness
+
+Назначение: исполнитель правок самого контура — агенты `.opencode/agent/`,
+скилы `.opencode/skills/`, спека `docs/harness-agents.md`, конфиги opencode
+(label `meta`). Третий «стек» по паттерну расширяемости: свой класс задач и
+своя верификация. НЕ берёт стековые Go/Python вершины — это зона
+developer-<стек>.
+
+Верификация контура: `opencode agent list` поднимает все роли; smoke-запуск
+изменённой роли; YAML-контракты в промптах совпадают со спекой;
+gh-команды не задублированы в промптах (живут в skill `tasks-gh`); форматы
+[AI]. При правках конфигурации opencode — следовать skill `customize-opencode`
+и напомнить о перезапуске opencode для применения изменений.
+
+Границы: те же, что у developer-<стек> (НЕ планирует, блокер
+`Depends on:` — стоп, возврат delivery);
+
+Инструменты: `read`, `edit`, `bash`. Операции с задачами — через skill
+`tasks-gh`.
+Вход: атомарная meta-вершина из ready set (задание от delivery).
+Выход — тот же YAML-отчёт исполнения, что у developer-<стек> (`done`/`unblocked`).
 
 ---
 
