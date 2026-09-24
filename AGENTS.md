@@ -1,14 +1,20 @@
 # AGENTS.md
 
-## Работа с задачами через gh
+## Работа с задачами
 
 Задачи живут как GitHub Issues, работа идёт через `gh` и роли-субагенты.
-Перед работой с задачами загрузи скилы `harness-workflow`
-(`.opencode/skills/harness-workflow/SKILL.md`) — конвенции: чек-лист
-атомарности, рёбра `Depends on:`/`Blocks:`, ready set, этапы работы — и
-`tasks-gh` (`.opencode/skills/tasks-gh/SKILL.md`) — операции с задачами
-(чтение/создание/рёбра/close). Роли — в `.opencode/agent/`;
-человекочитаемая спека — `docs/harness-agents.md`.
+Роли не завязаны на конкретный трекер: они используют нейтральный «инструмент
+работы с задачами», а какой именно применять — определяет этот манифест.
+
+Для этого репозитория (источник задач — GitHub Issues):
+
+- skill `harness-workflow` (`.opencode/skills/harness-workflow/SKILL.md`) —
+  конвенции: чек-лист атомарности, рёбра `Depends on:`/`Blocks:`, ready set,
+  этапы работы;
+- skill `tasks-gh` (`.opencode/skills/tasks-gh/SKILL.md`) — операции с
+  задачами (чтение/создание/рёбра/close).
+
+Роли — в `.opencode/agent/`; человекочитаемая спека — `docs/harness-agents.md`.
 
 ## AI-контент обязан иметь префикс `[AI]`
 
