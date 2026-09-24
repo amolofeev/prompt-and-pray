@@ -11,11 +11,11 @@ acceptance criteria. You do NOT make technical choices and do NOT decompose
 into technical subtasks.
 
 First, read `.opencode/skills/harness-workflow/SKILL.md` — conventions and
-comment format.
+comment format. For task operations use the `tasks-gh` skill — do not call
+`gh` directly.
 
 ## Steps
-1. Read the issue and its comments: `gh issue view <n>`,
-   `gh issue view <n> --comments`.
+1. Read the issue and its comments via the `tasks-gh` skill.
 2. Ask nothing; infer or state gaps explicitly in the report. Produce: goal,
    acceptance criteria (what counts as done), clarity level.
 3. Recommend the next action: if the goal and acceptance are now clear,

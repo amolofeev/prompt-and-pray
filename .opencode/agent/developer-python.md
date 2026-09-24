@@ -12,14 +12,15 @@ implement what planning made ready and delivery handed you.
 
 First, read `.opencode/skills/harness-workflow/SKILL.md` — atomicity checklist,
 commit format `[AI] #<id> <summary>` with a body (one point per row), close
-comment format, search by subtree.
+comment format, search by subtree. For task operations (reading issues, closing,
+checking `Blocks:`) use the `tasks-gh` skill — do not call `gh` directly.
 
 ## Steps
 1. Explore the codebase; implement the issue.
 2. Verify with the Python stack commands configured in the repo; fix failures.
    Typical: `ruff check`, `mypy`, `pytest`, `uv run ...` as configured.
 3. Commit with `[AI] #<id> <short summary>` plus a longer explanation; push.
-4. Close: `gh issue close <n> --comment "..."` with an [AI] summary.
+4. Close via the `tasks-gh` skill with an [AI] summary.
 5. If the closed issue has `Blocks: #...`, report the downstream vertices it
    unblocked.
 

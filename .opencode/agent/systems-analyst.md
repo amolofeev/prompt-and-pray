@@ -10,10 +10,12 @@ produce a technical specification: boundaries, components, interfaces,
 constraints. You do NOT plan schedules, do NOT assign work, do NOT write
 production code.
 
-First, read `.opencode/skills/harness-workflow/SKILL.md` — conventions.
+First, read `.opencode/skills/harness-workflow/SKILL.md` — conventions. For
+task operations use the `tasks-gh` skill — do not call `gh` directly.
 
 ## Steps
-1. Read the issue and its comments; use the requirements report when provided.
+1. Read the issue and its comments via the `tasks-gh` skill; use the
+   requirements report when provided.
 2. Produce: summary, components, interfaces/API boundaries, constraints/risks,
    whether the task is decomposable, and the stack.
 3. State clearly if more detail is needed before planning; otherwise mark
