@@ -126,6 +126,11 @@ Every issue/PR comment or description written by AI must follow this format:
 Планировщик строит граф работ, исполнитель трогает только вершины из ready set.
 Планирование и исполнение — разные фазы, а не один шаг.
 
+Фазы исполняются opencode-субагентами `.opencode/agent/{planner,scheduler,executor}.md`
+(спецификация — `docs/harness-agents.md`); дефолтный ход оркестрирует skill
+`harness-workflow` (`.opencode/skills/harness-workflow/SKILL.md`). Шаги ниже —
+справочная семантика ролей: при работающих субагентах действуй через них.
+
 When the human says something like "реши задачу 35" or "solve issue 35", иди по
 фазам ниже.
 
@@ -144,18 +149,20 @@ When the human says something like "реши задачу 35" or "solve issue 35
 
 ### Фазы
 
-1. **Planner** — read the issue: `gh issue view <number>` и `gh issue view
+1. **Planner** (субагент `planner`) — read the issue: `gh issue view <number>` и `gh issue view
    <number> --comments`. Вопрос «атомарна ли задача» решай по чек-листу
    («Критерий атомарности»), а не на глаз: составная → раскрой в подграф
    (`gh issue create --parent`), проставь рёбра зависимостей. Задача-анализ —
    задача-понимание: её результат порождает задачи на исполнение (новые
    листья/подграфы с рёбрами зависимости от неё; атомарный результат анализа
    заводится сабтаской к корневой).
-2. **Scheduler** — перед каждым взятием вычисли ready set по рёбрам-блокерам
+2. **Scheduler** (субагент `scheduler`) — перед каждым взятием вычисли ready set
+   по рёбрам-блокерам
    (см. «Ready set»): все блокеры CLOSED → задача к исполнению; открытый блокер →
    задача в работу не берётся, это блокер/ожидание. Решает scheduler, а не воля
    исполнителя.
-3. **Executor** — explore the codebase, write code, test it; commit with the
+3. **Executor** (субагент `executor`) — explore the codebase, write code, test it;
+   commit with the
    standard AI format; push; close: `gh issue close <number> --comment "..."` with
    a summary of what was done (AI-generated comment format).
 4. Возврат к planner: закрытие вершины может открыть новые — граф расширяется.

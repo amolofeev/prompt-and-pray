@@ -21,6 +21,10 @@ build the task graph, apply the atomicity criterion, wire
 implementing, the scheduler computes the ready set — an open blocker means wait, not
 start (see AGENTS.md "Ready set").
 
+Phases run as opencode subagents (`planner`/`scheduler`/`executor`, `.opencode/agent/`,
+spec in `docs/harness-agents.md`), orchestrated by the `harness-workflow` skill;
+fall back to direct execution when subagents are not loaded yet (opencode restart pending).
+
 For the single execution step itself:
 
 - Create a todo list using `todowrite` for tasks with 3+ steps
