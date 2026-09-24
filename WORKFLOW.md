@@ -13,9 +13,16 @@
 - Examine README, AGENTS.md, WORKFLOW.md, package.json, etc.
 - Check git log for recent context
 
-## 3. Plan
+## 3. Plan (planner → task graph)
 
-- Break the task into concrete steps
+Issue-level planning follows the harness model in AGENTS.md (GitHub Issues Workflow):
+build the task graph, apply the atomicity criterion, wire
+`Depends on: #<n>` / `Blocks: #<n>` edges, insert infrastructure vertices. Before
+implementing, the scheduler computes the ready set — an open blocker means wait, not
+start (see AGENTS.md "Ready set").
+
+For the single execution step itself:
+
 - Create a todo list using `todowrite` for tasks with 3+ steps
 - Decide on architecture, libraries, and approach
 - Verify library availability in the project before using

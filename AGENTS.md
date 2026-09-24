@@ -120,23 +120,68 @@ Every issue/PR comment or description written by AI must follow this format:
 <detailed explanation or content>
 ```
 
-## GitHub Issues Workflow
+## GitHub Issues Workflow (граф задач)
 
-When the human says something like "реши задачу 35" or "solve issue 35":
+Работа идёт по модели harness: **planner → task graph → scheduler → executor**.
+Планировщик строит граф работ, исполнитель трогает только вершины из ready set.
+Планирование и исполнение — разные фазы, а не один шаг.
 
-1. **Understand the issue** — read it with `gh issue view <number>`
-2. **Read comments** — use `gh issue view <number> --comments`
-3. **Implement** — explore the codebase, write code, test it
-4. **Commit** — commit the solution with the standard AI commit format
-5. **Push** — push the commit to origin (as part of finishing the task or stage, always `git push`)
-6. **Close the issue** — `gh issue close <number> --comment "..."` with a summary of what was done (using the AI-generated comment format above)
+When the human says something like "реши задачу 35" or "solve issue 35", иди по
+фазам ниже.
+
+### Task graph
+
+- Вершины = задачи (issues), рёбра = зависимости/блокеры.
+- Вложенность/дерево → `gh issue create --parent <root>` (sub-issues): составная
+  вершина раскрывается в подграф, атомарная задача — лист графа.
+- Рёбра зависимостей — перекрёстные ссылки `#id` в теле задачи в фиксированном
+  формате: `Depends on: #<n>` / `Blocks: #<n>`. Зависимость — первоклассная
+  сущность, а не комментарий в обсуждении.
+- Сквозные/инфраструктурные вершины («основа проекта», «тесты», «CI») — такие же
+  вершины графа с рёбрами от них к задачам, которые от них зависят. При раскрытии
+  любой задачи планировщик проверяет, требуют ли её листья новых инфраструктурных
+  предусловий, и вставляет такие вершины с рёбрами блокеров.
+
+### Фазы
+
+1. **Planner** — read the issue: `gh issue view <number>` и `gh issue view
+   <number> --comments`. Вопрос «атомарна ли задача» решай по чек-листу
+   («Критерий атомарности»), а не на глаз: составная → раскрой в подграф
+   (`gh issue create --parent`), проставь рёбра зависимостей. Задача-анализ —
+   задача-понимание: её результат порождает задачи на исполнение (новые
+   листья/подграфы с рёбрами зависимости от неё; атомарный результат анализа
+   заводится сабтаской к корневой).
+2. **Scheduler** — перед каждым взятием вычисли ready set по рёбрам-блокерам
+   (см. «Ready set»): все блокеры CLOSED → задача к исполнению; открытый блокер →
+   задача в работу не берётся, это блокер/ожидание. Решает scheduler, а не воля
+   исполнителя.
+3. **Executor** — explore the codebase, write code, test it; commit with the
+   standard AI format; push; close: `gh issue close <number> --comment "..."` with
+   a summary of what was done (AI-generated comment format).
+4. Возврат к planner: закрытие вершины может открыть новые — граф расширяется.
 
 > Note: completing a task or stage always ends with a push to origin (`git push`). This applies to every task/stage, not only to issues.
 
-When all atoms of a stage are closed but the stage issue is still open, the stage
-needs its own DoD closure: verify the checklist and close the stage with an
-[AI]-comment confirming DoD. Don't treat "all atoms done" as equivalent to
-"stage closed".
+### Критерий атомарности
+
+Задача — лист графа (готова к планированию и исполнению), если верны все три
+пункта:
+
+- один исполнимый шаг с понятным single deliverable;
+- результат измерим/проверяем без других задач;
+- не требует дальнейшего дробления (максимум N сабтасок / N часов).
+
+Нельзя сформулировать такой критерий — задача не готова к планированию: сначала
+задача-анализ, её результат породит листья/подграфы. Атомарные листья помечай
+лейблом `atomic`.
+
+### Ready set
+
+Исполнять можно только вершины, у которых все рёбра-блокеры закрыты. Scheduler
+вычисляет ready set по состояниям referenced-issues **перед стартом каждой
+задачи**: парси `Depends on:` / `Blocks:` из тела и проверяй
+`gh issue view <n> --json state`. Все блокеры CLOSED → в работу; иначе задача
+заблокирована и ждёт. Состояние меняется — проверяй заново при каждом взятии.
 
 ### Creating subtasks
 
@@ -148,12 +193,17 @@ When a task needs to be decomposed into subtasks (e.g. "декомпозируй
 > замена реальной связи родитель→потомок. Не «помечай лейблом», а «создавай
 > связь через `--parent`».
 
-1. **Decompose** — derive subtasks from the source of truth (SPEC, requirement doc, etc.); each subtask gets an actionable scope, acceptance criteria, and an estimate.
-2. **Create with parent link** — `gh issue create --parent <parent-number>` for each subtask (the `--parent` flag links it as a sub-issue right away; do NOT rely on body references alone). Reference the parent issue and relevant spec sections in the body (AI-format).
-3. **Verify** — confirm the link: `gh issue view <parent-number> --json subIssues` shows all created subtasks.
-4. **Summarize** — leave a summary comment on the parent issue listing the created subtasks.
+1. **Decompose** — derive subtasks from the source of truth (SPEC, requirement doc, etc.); each subtask gets an actionable scope, acceptance criteria, and an estimate. Каждый лист прогоняй через «Критерий атомарности»: не проходит → раскрой глубже или заведи задачу-анализ.
+2. **Create with parent link** — `gh issue create --parent <parent-number>` for each subtask (the `--parent` flag links it as a sub-issue right away; do NOT rely on body references alone). Reference the parent issue and relevant spec sections in the body (AI-format). Проставь рёбра зависимостей в теле: `Depends on: #<n>` — лист ждёт чужого закрытия (в том числе инфраструктурной вершины), `Blocks: #<n>` — его закрытие открывает другие. Если листьям нужны инфраструктурные предусловия (тесты, CI, основа) — заведи их отдельными вершинами и свяжи рёбрами-блокерами.
+3. **Verify** — confirm the link: `gh issue view <parent-number> --json subIssues` shows all created subtasks; рёбра видны в теле (`gh issue view <n>` содержит `Depends on:` / `Blocks:`).
+4. **Summarize** — leave a summary comment on the parent issue listing the created subtasks и их рёбра зависимостей.
 5. **Tag** — apply a relevant label to make tasks greppable: `subtask` — этапы (стадии),
-   `atomic` — атомарные задачи декомпозиции, `meta` — задачи на доработку агента.
+   `atomic` — атомарные задачи (листья графа), `meta` — задачи на доработку агента.
+
+When all atoms of a stage are closed but the stage issue is still open, the stage
+needs its own DoD closure: verify the checklist and close the stage with an
+[AI]-comment confirming DoD. Don't treat "all atoms done" as equivalent to
+"stage closed".
 
 ## Session Cleanup Workflow
 
