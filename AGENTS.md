@@ -142,6 +142,12 @@ needs its own DoD closure: verify the checklist and close the stage with an
 
 When a task needs to be decomposed into subtasks (e.g. "декомпозируй и заведи сабтаски", "split into issues"):
 
+> Сабтаски — это именно сабтаски: настоящие sub-issues, созданные через `gh issue
+> create --parent <parent-number>` и видимые в `subIssues` родителя. Лейбл ничего не
+> делает задачу сабтаском: `subtask`/`atomic` — только маркеры для grep, а не
+> замена реальной связи родитель→потомок. Не «помечай лейблом», а «создавай
+> связь через `--parent`».
+
 1. **Decompose** — derive subtasks from the source of truth (SPEC, requirement doc, etc.); each subtask gets an actionable scope, acceptance criteria, and an estimate.
 2. **Create with parent link** — `gh issue create --parent <parent-number>` for each subtask (the `--parent` flag links it as a sub-issue right away; do NOT rely on body references alone). Reference the parent issue and relevant spec sections in the body (AI-format).
 3. **Verify** — confirm the link: `gh issue view <parent-number> --json subIssues` shows all created subtasks.
