@@ -1,2 +1,4 @@
 .*
 !.opencode
+/docker-compose.yaml
+/opencode.jsonc
