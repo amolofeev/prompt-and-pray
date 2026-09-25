@@ -23,7 +23,9 @@
 Specificator — общий hidden-субагент обогащения контекста. Реестр типов узлов
 и разрешённых детей (`permission.task`) — в спеке `docs/harness-agents.md`.
 Составные meta-задачи планирует `team-lead-meta`; атомарные meta-вершины
-исполняет `developer-harness`.
+исполняет `developer-harness`. `harness-router` — единый механизм выбора
+следующего действия (правила в `harness-workflow`), не роль, не subagent и
+не узел `permission.task`.
 
 ## AI-контент обязан иметь префикс `[AI]`
 

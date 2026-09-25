@@ -45,7 +45,10 @@ specificator — общий сервис предобработки (hidden): л
 
 Delivery — единственный вход задач в контур и главный маршрутизатор/fallback:
 новые задачи входят через него, неадресованные вопросы и редиректы
-возвращаются к нему (см. раздел роли).
+возвращаются к нему (см. раздел роли). Перед каждым выбором Delivery применяет
+`harness-router` — отдельный harness-механизм состояний. Router не является
+ролью или subagent и не добавляется в дерево/реестр; его нормативные правила
+находятся в `harness-workflow`.
 
 ### Паттерн узла-оркестратора
 
@@ -131,6 +134,11 @@ developer-роли.
 opencode). Два описания должны совпадать: правка одного влечёт правку
 другого.
 
+`harness-router` намеренно отсутствует в матрице и во всех
+`permission.task`: это механизм выбора состояния, а не тип узла или
+исполнительная роль. Его нельзя использовать как `route.to`, `subagent_type`
+или команду выполнения.
+
 Форма в frontmatter: поле `permission.task` — объект «паттерн → правило», а
 не список. Пустое множество разрешённых детей записывается как:
 
@@ -166,6 +174,11 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 | developer-python | `.opencode/agent/developer-python.md` | исполнение Python-задач |
 | developer-harness | `.opencode/agent/developer-harness.md` | исполнение правок самого контура (meta) |
 | specificator | `.opencode/agent/specificator.md` | общий сервис предобработки: классификация, ограничения, артефакты (hidden) |
+
+`harness-router` не является строкой каталога ролей: у него нет файла в
+`.opencode/agent/`, `mode`, `permission.task` или `subagent_type`. Его можно
+упомянуть только как идентификатор механизма в отчёте состояния; исполнителем
+остаётся строка реестра выше.
 
 Все роли: `mode: subagent`. Права задаются frontmatter-полем `permission`
 (см. раздел каждой роли); разрешённые дети — полем `permission.task` по
@@ -350,6 +363,86 @@ closure:
 Переход не изменяет поля/значения `route`, не выдаёт `awaiting_po_closure` за
 `done`, не создаёт роль/subagent и не даёт Delivery close-право.
 
+### Harness-router: единый механизм выбора следующего действия
+
+`harness-router` — harness-механизм, который из проверенных фактов выбирает
+следующий шаг. Это не роль, не Task-субагент, не узел `permission.task` и не
+команда выполнения. Он не создаёт и не интерпретирует авторизацию PO, не
+выполняет close и не меняет трекер. Его нельзя добавить в каталог ролей или
+в реестр исполнителей.
+
+Нормативные правила и таблица состояний находятся в
+`.opencode/skills/harness-workflow/SKILL.md` в разделе «Router: единый
+механизм выбора следующего действия». Этот раздел — зеркало контракта для
+спецификации, а не второй источник правил. Delivery применяет тот же блок к
+каждому решению о следующем шаге.
+
+#### Контракт и состояния
+
+Router возвращает аддитивный sibling-блок рядом с legacy-`route`. Поля и
+допустимые значения `route` не меняются; блок можно игнорировать старому
+потребителю. `router.next.action` не является новым `route.action`. Миграция
+сохраняет legacy-контракт: старые потребители читают `route`, новые — sibling
+`router`; поля и значения `route` не переименовываются и не удаляются, а
+отсутствие блока означает прежнее поведение:
+
+```yaml
+router:
+  mechanism: harness-router
+  version: 1
+  state: dispatch|hold|blocked|awaiting_po_closure|done
+  next:
+    action: dispatch|wait|request_po_closure|stop
+    to: <existing role|null>
+    request: none|po_closure
+    requester: PO|null
+  target: <n|null>
+  target_state: OPEN|CLOSED|null
+  ready:
+    status: ready|blocked|not_applicable
+    blockers: [ <#n> ]
+  authorization: not_requested|pending|present
+  close: not_attempted|confirmed|indeterminate
+  reason: <reproducible reason>
+```
+
+| Условия | `router.state` | `next.action` | `next.to` | Поведение |
+|---|---|---|---|---|
+| Открыт `Depends on:` | `blocked` | `wait` | `null` | Stop-condition: не вызывать исполнителя и не закрывать. |
+| Все `Depends on:` CLOSED, вершина готова | `dispatch` | `dispatch` | одна существующая роль | Вызвать ровно одну зарегистрированную роль. |
+| `needs_reply: true` или DoD `fail` | `hold` | `wait` | `null` | Только ожидание; PO-запрос и writer не запускать. |
+| DoD `pass`, target OPEN, решения PO нет | `awaiting_po_closure` | `request_po_closure` | `null`, `requester: PO` | Оставить OPEN; запросить/ожидать решение PO, а явный PO-запрос передать внешнему `po_authorized_close` (S2); авторизация не создаётся. |
+| PO-решение и свежий DoD подтверждены, close подтверждён | `done` | `stop` | `null` | Единственная ветка фактического `done`. |
+| Конфликт, CLOSED без marker или неоднозначный close | `blocked` | `wait` | `null` | Не выдавать `done` и не повторять close. |
+
+Ветка `awaiting_po_closure` всегда оставляет target OPEN. Если явного
+PO-решения ещё нет, `request_po_closure` означает запрос/ожидание. Если вход
+уже содержит явный PO-запрос, тот же семантический шаг передаётся внешнему
+переходу `po_authorized_close` (S2) для проверки; только подтверждённый результат
+S2 может перевести состояние в `done`. Router не трактует запрос как
+авторизацию и не вызывает close.
+
+`next.to` ненулевой только для `dispatch`; это существующая роль из реестра,
+а не `router`. `hold` и `blocked` — только ожидание. `done` допустим только
+после подтверждения `target_state: CLOSED` и marker-комментария
+`<!-- harness:po_authorized_close target=#<n> -->`; рекомендация Delivery,
+`pending` authorization или голое состояние CLOSED без marker не являются
+close.
+
+#### Readiness и границы
+
+Delivery перечитывает зависимости через `tasks-gh` перед каждым dispatch. Открытый
+blocker остаётся stop-condition и находится в `ready.blockers`; после его
+перехода в CLOSED blocker удаляется из активного списка, ready set
+пересчитывается, и только затем router может выбрать существующего исполнителя.
+Router не создаёт и не изменяет `Depends on:`/`Blocks:`.
+
+В реестре `permission.task`, каталоге ролей и manifest-ссылках `router`
+отсутствует как исполнитель. В Delivery, developer-ролях и командах выполнения
+нет вызова `router`; слово встречается только как имя harness-механизма и его
+аддитивного отчёта. Механизм не даёт Delivery close-право и не превращает
+PO-запрос в авторизацию.
+
 Границы:
 - НЕ исполняет задачи, НЕ пишет код, НЕ декомпозирует сам;
 - НЕ создаёт и НЕ закрывает issues за других участников, включая parent;
@@ -391,6 +484,15 @@ route:
 OPEN target; неуспешный — `hold` без запроса авторизации. `action: done`
 допустим только при фактически подтверждённом CLOSED target и никогда не
 является синонимом DoD-рекомендации.
+
+Если состояние выбирается harness-router, Delivery может дополнительно
+вернуть sibling-блок `router` из нормативного контракта:
+`state: dispatch|hold|blocked|awaiting_po_closure|done`,
+`next.action: dispatch|wait|request_po_closure|stop` и поля
+`next.to`, `request`, `requester`, `ready`, `authorization`, `close`, `reason`.
+`dispatch` выбирает только существующую роль; `hold`/`blocked` только ждут;
+`awaiting_po_closure` оставляет target OPEN; `done` требует подтверждённого
+close. Блок аддитивен и не является новым `route.action`.
 
 ---
 
