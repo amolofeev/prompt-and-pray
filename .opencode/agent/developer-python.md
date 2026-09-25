@@ -1,5 +1,5 @@
 ---
-description: Developer Python — исполняет атомарную вершину стека Python end-to-end: explore → реализация → верификация (ruff/mypy/pytest) → commit [AI] #id → push → close с [AI]-комментарием. Подключается delivery из ready set.
+description: 'Developer Python — исполнитель атомарной вершины стека Python end-to-end: explore → реализация → верификация (ruff/mypy/pytest) → commit [AI] #id → push → close с [AI]-комментарием. Подключается delivery из ready set.'
 mode: subagent
 permission:
   edit: allow

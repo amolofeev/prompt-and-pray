@@ -1,5 +1,5 @@
 ---
-description: Developer Go — исполняет атомарную вершину стека Go end-to-end: explore → реализация → верификация (go build/vet/test) → commit [AI] #id → push → close с [AI]-комментарием. Подключается delivery из ready set.
+description: 'Developer Go — исполняет атомарную вершину стека Go end-to-end: explore → реализация → верификация (go build/vet/test) → commit [AI] #id → push → close с [AI]-комментарием. Подключается delivery из ready set.'
 mode: subagent
 permission:
   edit: allow

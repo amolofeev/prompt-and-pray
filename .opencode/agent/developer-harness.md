@@ -1,5 +1,5 @@
 ---
-description: Developer Harness — исполнитель правок контура (meta): агенты `.opencode/agent/`, скилы, спека `docs/harness-agents.md`, конфиги opencode. Верификация контура (opencode agent list, smoke-запуск ролей, синхронность YAML-контрактов промптов и спеки, [AI]-форматы) → commit [AI] #id → push → close с [AI]-комментарием. Подключается delivery для задач label `meta`.
+description: 'Developer Harness — исполнитель правок контура (meta): агенты `.opencode/agent/`, скилы, спека `docs/harness-agents.md`, конфиги opencode. Верификация контура (opencode agent list, smoke-запуск ролей, синхронность YAML-контрактов промптов и спеки, [AI]-форматы) → commit [AI] #id → push → close с [AI]-комментарием. Подключается delivery для задач label `meta`.'
 mode: subagent
 permission:
   edit: allow
