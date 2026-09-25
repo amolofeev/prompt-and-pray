@@ -32,7 +32,7 @@ close/ready set) — в skill `tasks-gh` (#85). Оба — единый исто
    ▼
 primary-агент (корень дерева)
    ▼
-delivery (узел-оркестратор; главный маршрутизатор/fallback; DoD-гейт)
+   delivery (узел-оркестратор; главный маршрутизатор/fallback; DoD-рекомендация, без close)
    ├─► business-analyst (A) ──(опц. specificator)──► агрегат ► delivery
    ├─► systems-analyst ──(опц. business-analyst (B) / specificator)──► агрегат ► delivery
    ├─► team-lead-<стек> (включая team-lead-meta) ──(опц. business-analyst (B) / specificator)──► граф ► delivery
@@ -156,7 +156,7 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 
 | Роль | Файл конфига | Позиция |
 |---|---|---|
-| delivery | `.opencode/agent/delivery.md` | узел-оркестратор первого уровня: маршрутизация, поток, DoD-гейт, fallback |
+| delivery | `.opencode/agent/delivery.md` | узел-оркестратор первого уровня: маршрутизация, поток, DoD evidence/recommendation, fallback; без close-права |
 | business-analyst | `.opencode/agent/business-analyst.md` | «голос заказчика в контуре»: требования / приёмка, режимы A и B |
 | systems-analyst | `.opencode/agent/systems-analyst.md` | тех.спецификация |
 | team-lead-go | `.opencode/agent/team-lead-go.md` | планирование Go-задач |
@@ -179,11 +179,12 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 ## 1. delivery (хаб)
 
 Назначение: входная точка любых новых запросов «сделай N» и главный
-маршрутизатор/fallback. Решает, куда отправить задачу, агрегирует результаты
-участников, ведёт готовность (ready set) и блокеры, держит DoD-гейт при
-закрытии родительской вершины. Узел-оркестратор первого уровня: входит из
-корня (primary-агент), делегирует ролям по паттерну узла и возвращает агрегат
-корню.
+маршрутизатор/fallback. Это командная роль: Delivery координирует поддерево,
+агрегирует результаты участников, ведёт готовность (ready set) и блокеры,
+проверяет DoD и возвращает evidence с рекомендацией. Финальное решение о
+закрытии parent принадлежит PO; Delivery не выполняет close. Узел-оркестратор
+первого уровня: входит из корня (primary-агент), делегирует ролям по паттерну
+узла и возвращает агрегат корню.
 
 Маршрутизация. Новые задачи входят через delivery. В ходе работы роли
 адресуются друг другу напрямую (прямое адресование по умолчанию); получатель,
@@ -204,10 +205,47 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 - Если business-analyst вернул `needs_reply: true` — задача удерживается до
   ответа (комментарий в issue), повторный маршрут не нужен.
 
+### DoD-гейт Delivery: evidence и рекомендация
+
+Когда листья parent уже закрыты, Delivery проверяет актуальное состояние
+родителя и его `Depends on:`/`subIssues`, собирает воспроизводимые evidence и
+добавляет в существующий `route` аддитивный блок `dod`. Поля и допустимые
+значения старого `route` не меняются:
+
+```yaml
+route:
+  # существующие поля route
+  dod:
+    target: <n>
+    result: pass|fail
+    recommendation: close|hold
+    evidence: [ <воспроизводимые доказательства> ]
+    decision_owner: PO
+    state: awaiting_po_closure|hold
+    target_state: OPEN
+    authorization: pending|not_requested
+```
+
+- Успешный DoD: `result: pass`, `recommendation: close`,
+  `decision_owner: PO`, `state: awaiting_po_closure`, `target_state: OPEN` и
+  `authorization: pending`. Рекомендация не является close; parent остаётся
+  OPEN до решения PO.
+- Неуспешный DoD: `result: fail`, `recommendation: hold`, `state: hold` и
+  `authorization: not_requested`; запрос авторизации не создаётся.
+- `done` означает только фактически подтверждённое закрытие target. Delivery
+  не инициирует close, не выдаёт `close`-рекомендацию за `done` и не может
+  получить право закрыть parent.
+- `dod` — необязательное аддитивное расширение, поэтому старый YAML-контур
+  и потребители, игнорирующие неизвестное поле, остаются совместимыми.
+  Повторная проверка и фактический PO-авторизованный close — отдельный
+  orchestration-переход, не операция Delivery.
+
 Границы:
 - НЕ исполняет задачи, НЕ пишет код, НЕ декомпозирует сам;
-- НЕ создаёт и НЕ закрывает issues за других участников (кроме DoD-гейта
-  родителя после закрытия всех листьев).
+- НЕ создаёт и НЕ закрывает issues за других участников, включая parent;
+  Delivery не имеет close-права и не может выдать рекомендацию за `done`;
+- проверяет DoD и возвращает evidence/recommendation, но не инициирует и не
+  подтверждает PO-авторизованный close — этот переход находится вне роли.
 
 Разрешённые дети (permission.task): `business-analyst`, `systems-analyst`,
 `team-lead-*` (включая `team-lead-meta`), `developer-*`, `specificator`.
@@ -216,7 +254,8 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 Операции с задачами — через skill `tasks-gh`.
 
 Вход: произвольная команда заказчика, номер issue или вопрос/редирект роли.
-Выход — YAML-отчёт о маршрутизации:
+Выход — существующий YAML-отчёт о маршрутизации с опциональным аддитивным
+блоком DoD-рекомендации:
 
 ```yaml
 route:
@@ -226,7 +265,22 @@ route:
   mode: A|B (только для business-analyst)
   reasoning: <почему этот маршрут>
   acceptance: <критерии приёмки, если известны>
+  dod:
+    target: N
+    result: pass|fail
+    recommendation: close|hold
+    evidence: [ <воспроизводимые DoD-доказательства> ]
+    decision_owner: PO
+    state: awaiting_po_closure|hold
+    target_state: OPEN
+    authorization: pending|not_requested
 ```
+
+`dod` появляется только после проверки DoD и не заменяет старые поля
+`route`. Успешный результат — `close` + `PO` + `awaiting_po_closure` при
+OPEN target; неуспешный — `hold` без запроса авторизации. `action: done`
+допустим только при фактически подтверждённом CLOSED target и никогда не
+является синонимом DoD-рекомендации.
 
 ---
 

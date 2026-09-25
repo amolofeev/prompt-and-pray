@@ -58,6 +58,47 @@ meta-issue и сошлись на него.
 - Каждый этап/задача завершается `git push`.
 - Закрытие вершины может открыть новые задачи → вернуться к delivery.
 
+### DoD-рекомендация Delivery (единый контракт)
+
+Delivery — командная роль: она координирует поддерево, ведёт readiness и
+блокеры, проверяет DoD и возвращает воспроизводимые evidence. Финальное
+решение о закрытии parent принимает PO; Delivery не является его исполнителем
+и не имеет close-права.
+
+После проверки DoD Delivery возвращает существующий `route` без изменения его
+полей и допустимых значений, дополняя его аддитивным блоком `dod`:
+
+```yaml
+route:
+  # существующие поля route
+  dod:
+    target: <n>
+    result: pass|fail
+    recommendation: close|hold
+    evidence: [ <воспроизводимые доказательства> ]
+    decision_owner: PO
+    state: awaiting_po_closure|hold
+    target_state: OPEN
+    authorization: pending|not_requested
+```
+
+Семантика блока:
+
+- `result: pass` → `recommendation: close`, `decision_owner: PO`,
+  `state: awaiting_po_closure`, `target_state: OPEN` и
+  `authorization: pending`. Это рекомендация и evidence, а не close: issue
+  остаётся OPEN, пока PO не примет решение.
+- `result: fail` → `recommendation: hold`, `state: hold` и
+  `authorization: not_requested`. При неуспешном DoD авторизация не
+  запрашивается.
+- `done` означает только подтверждённое фактическое закрытие target. Delivery
+  не выдаёт `done` за рекомендацию, не инициирует close от своего имени и не
+  может получить право выполнить close parent.
+- `dod` — необязательное аддитивное расширение старого YAML-контракта, а не
+  новый `route.action`; потребители, не знающие блок, могут его игнорировать.
+  Фактический PO-авторизованный close и повторная проверка DoD — отдельный
+  orchestration-переход вне роли Delivery.
+
 ## Оркестрация
 
 ### Паттерн узла-оркестратора дерева
@@ -119,8 +160,13 @@ team-lead). Полученный YAML-отчёт — единственный к
    пересчитывается.
 4. Закрытие блокера разблокирует downstream-вершины — исполнение продолжается.
 5. Когда все листья родителя закрыты (parent ещё открыт) — DoD-гейт delivery:
-   проверяет чек-лист родителя (список sub-issues — в skill `tasks-gh`) и
-   закрывает его с [AI]-комментарием.
+   проверить чек-лист родителя (список sub-issues — в skill `tasks-gh`),
+   собрать evidence и вернуть `dod`. При успешной проверке вернуть
+   `recommendation: close`, `decision_owner: PO` и
+   `state: awaiting_po_closure`, оставив issue OPEN. При неуспешной — вернуть
+   `recommendation: hold`, `state: hold` и не запрашивать авторизацию.
+   Delivery не закрывает parent; `done` появляется только после отдельного
+   фактически подтверждённого PO-авторизованного close.
 
 ### Остановка
 - Целевая вершина закрыта и её DoD подтверждён — стоп, отчёт пользователю.
