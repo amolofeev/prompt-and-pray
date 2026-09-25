@@ -1,4 +1,8 @@
 .*
+.opencode/node_modules
+.opencode/package-lock.json
+.opencode/package.json
 !.opencode
+!.opencode/.gitignore
 /docker-compose.yaml
 /opencode.jsonc
