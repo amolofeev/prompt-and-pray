@@ -240,6 +240,116 @@ route:
   Повторная проверка и фактический PO-авторизованный close — отдельный
   orchestration-переход, не операция Delivery.
 
+### Переход `po_authorized_close` (вне Delivery)
+
+`po_authorized_close` — единственный механизм harness для PO-авторизованного
+закрытия parent. Его выполняет primary-агент/AI-команда; это не роль, не
+subagent, не узел `permission.task` и не автоматическое закрытие. Механизм
+дополняет существующий `route` отдельным блоком `closure`, не добавляя нового
+`route.action` и не меняя legacy-контракт.
+
+Вход: `route.dod` с `result: pass`, `state: awaiting_po_closure`, открытый
+target и новый пользовательский запрос. До допустимого запроса target остаётся
+OPEN в `awaiting_po_closure`; DoD-рекомендация, молчание и отсутствие команды
+авторизацию не создают.
+
+**PO-запрос.** Обязательной slash-команды нет. Каноническая естественная форма:
+`Разрешаю закрыть задачу #<n>.` Допустим эквивалентный текст только тогда,
+когда он одновременно явно выражает разрешение закрыть (а не вопрос,
+предположение или команду общего исполнения) и называет ровно один конкретный
+target `#<n>`. Оба условия обязательны; target должен совпадать с
+`route.dod.target`. PO не редактирует трекер вручную, AI не создаёт и не
+выводит разрешение за PO.
+
+Не являются авторизацией молчание, отсутствие команды, `сделай #n`,
+`реши задачу #n`, голый императив `закрой #n` без явного разрешения,
+рекомендация `close` у Delivery, состояние `awaiting_po_closure`, запрос без
+номера, несколько target или несовпадающий target. Такой вход не запускает
+переход и не меняет состояние issue.
+
+Последовательность:
+
+1. Primary-агент/AI-команда через `tasks-gh` заново читает target и его
+   close-комментарии; writer-операций на этом шаге нет.
+2. Проверяет семантику PO-запроса и target. При невалидном входе оставляет
+   `route.dod.state: awaiting_po_closure` и не вызывает close.
+3. Если target уже CLOSED, ищет marker-комментарий
+   `<!-- harness:po_authorized_close target=#<n> -->`. С marker возвращает
+   идемпотентный `done` с `dod_recheck.result: not_required` и `attempts: 0`
+   без новой операции; без marker возвращает `blocked`, не выдавая чужое
+   закрытие за свой результат.
+4. Для OPEN target независимо повторяет актуальную DoD-проверку по телу и
+   checklist parent, актуальным `subIssues` и `Depends on:`, формирует новое
+   evidence. Старое `route.dod.evidence` само по себе повторной проверкой не
+   является.
+5. При `fail` возвращает `hold`/`blocked`, `attempts: 0`, не вызывает close и
+   не публикует комментарий. При `pass` формирует close-комментарий по форме
+   ниже. Непосредственно перед writer-вызовом ещё раз читает state/comments:
+   если target уже CLOSED, применяет идемпотентную ветку из шага 3; при ином
+   конфликте возвращает `blocked` без записи.
+6. Вызывает close через `tasks-gh` не более одного раза. При ошибке не
+   повторяет команду вслепую, а перечитывает target и marker-комментарий;
+   подтверждённый CLOSED + marker означает `done`, иначе `blocked`.
+7. `done` допустим только после фактического подтверждения CLOSED target и
+   marker-комментария; до этого результат — `hold` либо `blocked`.
+
+Close-комментарий при `pass` имеет одну фиксированную форму:
+
+```text
+[AI] PO-авторизованное закрытие задачи #<n>
+
+- Основание авторизации: <дословный PO-запрос>
+- Повторная DoD-проверка: pass
+- Evidence: <актуальное воспроизводимое evidence>
+- Итог: задача #<n> закрыта.
+
+<!-- harness:po_authorized_close target=#<n> -->
+```
+
+При `hold`/`blocked` до writer-вызова в close-результате сохраняется отдельный
+диагностический `[AI]`-текст с причиной; он не публикуется и не содержит
+утверждения о выполненном close.
+
+Операционный контракт — аддитивный sibling к `route`:
+
+```yaml
+closure:
+  transition: po_authorized_close
+  target: <n>
+  target_state: OPEN|CLOSED
+  authorization_basis:
+    source: PO
+    request: <дословный PO-запрос>
+    target: <n>
+  dod_recheck:
+    result: pass|fail|not_required
+    evidence: [ <актуальное воспроизводимое evidence> ]
+  close:
+    attempts: 0|1
+    result: closed|already_closed|not_called|indeterminate
+    comment:
+      text: <[AI]-комментарий с маркером>
+      disposition: posted|existing|not_posted
+      url: <URL комментария | null>
+  outcome: done|hold|blocked
+```
+
+- `done` — только `close.result: closed|already_closed` при подтверждённых
+  CLOSED target и marker-комментарии; это идемпотентный итог фактического
+  close.
+- `hold` — допустимая авторизация, но `dod_recheck.result: fail`; writer-операция
+  не вызывалась.
+- `blocked` — конфликт, неоднозначный исход, CLOSED без marker-комментария
+  либо иная невозможность безопасно подтвердить close; writer-операция не
+  повторяется.
+- `comment.disposition: not_posted` означает локальный `[AI]`-текст в отчёте;
+  при `hold`/`blocked` он не публикуется. При успехе disposition равен
+  `posted`, при идемпотентном повторе — `existing`; в обоих случаях указан
+  URL.
+
+Переход не изменяет поля/значения `route`, не выдаёт `awaiting_po_closure` за
+`done`, не создаёт роль/subagent и не даёт Delivery close-право.
+
 Границы:
 - НЕ исполняет задачи, НЕ пишет код, НЕ декомпозирует сам;
 - НЕ создаёт и НЕ закрывает issues за других участников, включая parent;

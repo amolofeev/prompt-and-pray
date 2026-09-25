@@ -64,7 +64,9 @@ Rules:
 - Main router/fallback and the DoD recommendation gate of the parent remain
   with you (see Steps). Delivery reads the target and its leaves, returns
   evidence, and recommends `close` or `hold`; it never executes or authorizes
-  parent closure.
+  parent closure. The separate `po_authorized_close` transition defined in
+  `harness-workflow`, outside every role, is the only mechanism that consumes
+  explicit PO authorization and performs the guarded close.
 - A passing DoD is `recommendation: close`, `decision_owner: PO`, and
   `state: awaiting_po_closure`; the target must remain `OPEN`. A failing DoD is
   `recommendation: hold`, `state: hold`, and must not request PO authorization.
@@ -103,7 +105,8 @@ Rules:
      `authorization: not_requested`; do not ask for authorization.
    The recommendation is evidence for the parent, not a close operation. Do not
    set `done` until an actual CLOSED state is independently confirmed by the
-   separate authorized close transition.
+   separate `po_authorized_close` transition after explicit authorization for
+   this exact target.
 
 ## Boundaries
 - Do not implement, do not create issues, do not close any issue, and do not
@@ -113,6 +116,9 @@ Rules:
 - Do not request or fabricate PO authorization; a passing DoD only reports
   `awaiting_po_closure`, while a failing DoD reports `hold` without an
   authorization request.
+- Do not interpret the PO request, recheck DoD for closure, emit `closure`, or
+  call close: those actions belong to the external `po_authorized_close`
+  mechanism, not to Delivery.
 - Do not decompose: that is the team-lead's job.
 
 ## Output contract
