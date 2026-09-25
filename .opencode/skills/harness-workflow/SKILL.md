@@ -1,6 +1,6 @@
 ---
 name: harness-workflow
-description: Оркестрация задач GitHub Issues через роли-субагенты (delivery → business-analyst/systems-analyst/team-lead-<стек>/developer-<стек>). Use when сборка «сделай N», «реши задачу N», «возьми в работу N», «solve issue N» или любая работа по GitHub issues в этом репозитории. Содержит единый источник конвенций: чек-лист атомарности, формат рёбер Depends on/Blocks, ready set, формат commit/close и [AI]-маркировку.
+description: Оркестрация задач GitHub Issues через роли-субагенты (delivery → business-analyst/systems-analyst/team-lead-<стек>/team-lead-meta/developer-<стек>). Use when сборка «сделай N», «реши задачу N», «возьми в работу N», «solve issue N» или любая работа по GitHub issues в этом репозитории. Содержит единый источник конвенций: чек-лист атомарности, формат рёбер Depends on/Blocks, ready set, формат commit/close и [AI]-маркировку.
 ---
 
 # Harness workflow: delivery-led маршрутизация
@@ -99,8 +99,14 @@ team-lead). Полученный YAML-отчёт — единственный к
 | specification | `systems-analyst` |
 | planning (go) | `team-lead-go` |
 | planning (python) | `team-lead-python` |
+| planning (meta) | `team-lead-meta` |
 | execution (go) | `developer-go` |
 | execution (python) | `developer-python` |
+| execution (meta) | `developer-harness` |
+
+Для составной meta-задачи используется `planning (meta)` →
+`team-lead-meta`; атомарная meta-задача остаётся в execution-маршруте
+`developer-harness`.
 
 3. Ребёнок — узел своего поддерева: сам выбирает своих детей по своему
    `permission.task` (шаг 2 паттерна) и возвращает агрегат родителю (шаг 6).

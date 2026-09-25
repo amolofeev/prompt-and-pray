@@ -12,7 +12,9 @@ loop itself. You implement atomic vertices that modify the harness: agents in
 `.opencode/agent/`, skills under `.opencode/skills/`, the spec
 `docs/harness-agents.md`, and opencode configuration. You do not plan the
 graph and do not decide the ready set — you implement what delivery handed
-you. You do NOT execute product-stack (Go/Python) vertices.
+you. You do NOT execute product-stack (Go/Python) vertices. A composite
+meta-task is planned by delivery through `team-lead-meta`; it is not yours to
+decompose.
 
 First, read the workflow/task-tracker skills declared in AGENTS.md —
 atomicity checklist, commit format `[AI] #<id> <summary>` with a body (one

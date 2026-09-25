@@ -35,7 +35,7 @@ primary-агент (корень дерева)
 delivery (узел-оркестратор; главный маршрутизатор/fallback; DoD-гейт)
    ├─► business-analyst (A) ──(опц. specificator)──► агрегат ► delivery
    ├─► systems-analyst ──(опц. business-analyst (B) / specificator)──► агрегат ► delivery
-   ├─► team-lead-<стек> ──(опц. business-analyst (B) / specificator)──► граф ► delivery
+   ├─► team-lead-<стек> (включая team-lead-meta) ──(опц. business-analyst (B) / specificator)──► граф ► delivery
    ├─► developer-<стек> (лист: нативные инструменты) ► результат ► delivery
    └─► developer-harness (лист: нативные инструменты) ► правка ► delivery
 
@@ -117,13 +117,14 @@ aggregate:
 | delivery | business-analyst, systems-analyst, team-lead-*, developer-*, specificator |
 | business-analyst | specificator |
 | systems-analyst | business-analyst (режим B), specificator |
-| team-lead-* | business-analyst (режим B), specificator |
+| team-lead-* (team-lead-go, team-lead-python, team-lead-meta) | business-analyst (режим B), specificator |
 | developer-* (developer-go, developer-python, developer-harness) | — (лист: только нативные инструменты) |
 | specificator | — (ноль исходящих рёбер) |
 
 Формат строки реестра: `<тип узла> → <глобы разрешённых детей>`; `—` (пустое
 множество) — лист. Глоб `team-lead-*` покрывает все позиции стека
-(`team-lead-go`, `team-lead-python`), `developer-*` — все developer-роли.
+(`team-lead-go`, `team-lead-python`, `team-lead-meta`), `developer-*` — все
+developer-роли.
 
 Синхронность (A5.1): реестр материализуется дважды — матрица в этом разделе
 (источник правды) и `permission.task` в frontmatter роли (машинный фильтр
@@ -160,6 +161,7 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 | systems-analyst | `.opencode/agent/systems-analyst.md` | тех.спецификация |
 | team-lead-go | `.opencode/agent/team-lead-go.md` | планирование Go-задач |
 | team-lead-python | `.opencode/agent/team-lead-python.md` | планирование Python-задач |
+| team-lead-meta | `.opencode/agent/team-lead-meta.md` | планирование составных meta-задач контура |
 | developer-go | `.opencode/agent/developer-go.md` | исполнение Go-задач |
 | developer-python | `.opencode/agent/developer-python.md` | исполнение Python-задач |
 | developer-harness | `.opencode/agent/developer-harness.md` | исполнение правок самого контура (meta) |
@@ -191,10 +193,12 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 - результат/критерии приёмки неясны → `business-analyst` (режим A);
 - вопрос роли, ответ в бизнес-реальности → `business-analyst` (режим B);
 - требования есть, тех.решение неясно → `systems-analyst`;
-- тех.задача есть, нужен план/декомпозиция → `team-lead-<стек>` (по стеку);
+- тех.задача стека есть, нужен план/декомпозиция → `team-lead-<стек>` (по стеку);
+- составная meta-задача (label `meta`, scope контура) есть, нужен
+  план/декомпозиция → `team-lead-meta`;
 - атомарная и готова к исполнению → `developer-<стек>`;
-- правка самого контура (агенты/скилы/спека/конфиги opencode; label `meta`) →
-  `developer-harness`.
+- атомарная правка самого контура (агенты/скилы/спека/конфиги opencode;
+  label `meta`) → `developer-harness`.
 - Редирект называет адресата — маршрут туда; если адресат не назван и delivery
   тоже не может его определить — вернуть отчёт с reasoning.
 - Если business-analyst вернул `needs_reply: true` — задача удерживается до
@@ -206,7 +210,7 @@ developer-* — 0 исходящих рёбер. Проверка выполня
   родителя после закрытия всех листьев).
 
 Разрешённые дети (permission.task): `business-analyst`, `systems-analyst`,
-`team-lead-*`, `developer-*`, `specificator`.
+`team-lead-*` (включая `team-lead-meta`), `developer-*`, `specificator`.
 
 Инструменты: `read`, `bash` (gh, git status/log); `edit: deny`.
 Операции с задачами — через skill `tasks-gh`.
@@ -218,7 +222,7 @@ developer-* — 0 исходящих рёбер. Проверка выполня
 route:
   container: N | null (вопрос без номера issue)
   action: requirements|specification|planning|execution|done
-  to: business-analyst|systems-analyst|team-lead-go|team-lead-python|developer-go|developer-python|developer-harness
+  to: business-analyst|systems-analyst|team-lead-go|team-lead-python|team-lead-meta|developer-go|developer-python|developer-harness
   mode: A|B (только для business-analyst)
   reasoning: <почему этот маршрут>
   acceptance: <критерии приёмки, если известны>
@@ -385,6 +389,64 @@ plan:
 
 ---
 
+## 4a. team-lead-meta (planner meta-стека)
+
+Назначение: техническое планирование составных задач самого harness-контура —
+агентов, скилов, спецификации и конфигурации opencode. Роль применяется к
+meta-задачам, которым нужна декомпозиция; отдельный `developer-harness`
+остаётся исполнителем только атомарных meta-вершин.
+
+Маршрут delivery: если meta-задача составная и не готова к исполнению как
+атом, delivery вызывает `team-lead-meta`. После получения `plan` delivery
+снова пересчитывает ready set и направляет готовые meta-листья в
+`developer-harness`; planner не вызывает developer напрямую. Если атомарность
+или границы meta-задачи нельзя сформулировать, delivery сначала направляет
+задачу на анализ, а не расширяет scope planner’а.
+
+Матрица разрешённых детей:
+
+| Узел | Разрешённые дети (permission.task) |
+|---|---|
+| team-lead-meta | business-analyst (режим B), specificator |
+
+Планировщик может вызвать только этих двух детей. Он не вызывает
+`developer-harness`, product developers или самого себя; граф дочерних
+вызовов ацикличен.
+
+Границы:
+- планирует только meta-вершины; Go/Python-планирование остаётся у
+  соответствующих team-lead;
+- не исполняет код, не изменяет файлы контура, не запускает build/test/lint и
+  не коммитит, не пушит и не закрывает issues;
+- все операции чтения и изменения задач выполняет через skill `tasks-gh`.
+
+Инструменты: `read`, ограниченный `bash` только для операций трекера
+(`gh issue view*`, `gh issue create*`, `gh issue edit*`, `gh issue list*`);
+`edit: deny`. Вход: составная meta-вершина из задания delivery
+вместе с технической постановкой, ограничениями и предшествующими YAML-отчётами.
+Выход — YAML-отчёт планирования с единственным стеком `meta`:
+
+```yaml
+plan:
+  root: <n>
+  atomic: true|false
+  vertices:
+  - number: <сабтаска или root>
+    title: <название>
+    atomic: true|false
+    depends_on: [ <#n> ]
+    blocks: [ <#n> ]
+  subtasks-created: [ <#n> ]
+  stack: meta
+```
+
+`plan` — существующий контракт планирования, а `aggregate` (если planner
+вызвал разрешённого ребёнка) остаётся аддитивным блоком общего контракта.
+Формат рёбер и чек-лист атомарности берутся из `harness-workflow`; операции
+создания сабтасок, рёбер и проверки связей — из `tasks-gh`.
+
+---
+
 ## 5. developer-<стек> (go / python)
 
 Назначение: исполняет атомарную вершину своего стека end-to-end:
@@ -433,7 +495,9 @@ gh-команды не задублированы в промптах (живу�
 и напомнить о перезапуске opencode для применения изменений.
 
 Границы: те же, что у developer-<стек> (НЕ планирует, блокер
-`Depends on:` — стоп, возврат delivery);
+`Depends on:` — стоп, возврат delivery). Составная meta-задача передаётся
+delivery на планирование `team-lead-meta`; developer-harness не расширяет её
+scope самостоятельно;
 
 Разрешённые дети (permission.task): `—` (лист; `task: { "*": deny }`) — дети
 только нативные инструменты (`read`, `edit`, `bash`), субагентов не вызывает
@@ -524,6 +588,10 @@ artifacts: [ <существующие артефакты/доки/код, ре�
    `developer-<s>` для задач стека `<s>` и строки реестра в матрице
    (глобы `team-lead-*` / `developer-*` уже её покрывают; правки — только
    если новому стеку нужны отдельные дети).
+
+Для meta-стека используется отдельный planner `team-lead-meta`; атомарные
+meta-листья исполняет `developer-harness`, поэтому отдельный `developer-meta`
+не добавляется.
 
 ### Зарегистрировать новый тип узла
 
