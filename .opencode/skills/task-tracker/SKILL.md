@@ -29,12 +29,85 @@ description: Инструмент работы с задачами в треке
 
 Вызови агента `github-issues` через инструмент субагентов. Передай ему:
 
-- **операцию** — что именно нужно сделать: создать, прочитать, изменить,
-  связать, пометить, снять, закрыть;
-- **объект** — репозиторий, если он не определяется автоматически, и номер
-  или URL задачи;
-- **текст задачи** — `title` и `body` дословно, если создаётся задача;
+- **операцию** — что именно нужно сделать: создать, прочитать, найти,
+  изменить, связать, пометить, снять, закрыть, переоткрыть;
+- **объект** — номер или URL задачи, а также репозиторий, если он не
+  определяется автоматически;
+- **текст задачи** — `title` и `body` дословно, если задача создаётся или
+  изменяется;
 - **атрибуты** — метки и связи, которые нужно установить или снять.
+
+Набор параметров зависит от операции: одни обязательные, другие нет, третьи
+принимают массив значений. Ниже — словарь параметров задачи и правила по
+операциям. Обязательный параметр без значения агент вернёт `need_input`, а не
+выполнит операцию.
+
+````yaml
+# Parameter vocabulary — what can be passed
+parameters:
+  repo:         OWNER/REPO                  # always optional: auto-detected in a worktree
+  issue:        number | URL                # required everywhere except "create issue", "find issues", "create label"
+  title:        string
+  body:         string
+  labels:       [string, ...]               # array
+  parent:       number | URL
+  sub-issue:    number | URL
+  blocking:     [number, ...]               # array
+  blocked-by:   [number, ...]               # array
+  related-to:   number | URL                # link target
+  close-reason: completed | not planned     # default: completed
+  authorization: true                       # required for close and reopen
+
+# Per-operation rules — required and optional parameters
+operations:
+  create issue:
+    required:   [title, body]
+    optional:   [repo, labels, parent, blocking, blocked-by]
+  view issue:
+    required:   [issue]
+  find issues:
+    required:   [selection criterion: query | labels | state]
+    optional:   [other criteria]
+  change title:
+    required:   [issue, title]
+  change body:
+    required:   [issue, body]   # for an existing issue only via the ## Related section after body-fallback consent
+  set parent:
+    required:   [issue, parent]
+  remove parent:
+    required:   [issue]
+  add sub-issue:
+    required:   [issue, sub-issue]
+  remove sub-issue:
+    required:   [issue, sub-issue]
+  add block:
+    required:   [issue, direction, blocking | blocked-by]
+  remove block:
+    required:   [issue, direction, blocking | blocked-by]
+  add related-to:
+    required:   [issue, related-to]
+  remove related-to:
+    required:   [issue, related-to]
+  add labels:
+    required:   [issue, labels]
+  remove labels:
+    required:   [issue, labels]
+  create label:
+    required:   [label name, description, color]
+  close:
+    required:   [issue, authorization]
+    optional:   [close-reason]
+  reopen:
+    required:   [issue, authorization]
+  combined edit:
+    required:   [issue, list of fields to change]
+````
+
+Уточнения:
+
+- `авторизация` — явное подтверждение входа на деструктивную операцию;
+- направление блокировки формулируется как «кто кого блокирует»;
+- комбинированная правка объединяет только названные поля, ничего сверх.
 
 Не добавляй от себя операции, которых не просил пользователь, даже если они
 кажутся логичными. Инструмент их всё равно не выполнит — это осознанное
